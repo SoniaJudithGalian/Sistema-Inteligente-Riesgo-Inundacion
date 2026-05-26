@@ -468,6 +468,7 @@ detectó patrones similares a escenarios de riesgo:
 
 Predicción ML:
 ➡️ {prediccion_texto}
+""")
 
 # =========================================================
 # MEDIDOR LOGICA DIFUSA
