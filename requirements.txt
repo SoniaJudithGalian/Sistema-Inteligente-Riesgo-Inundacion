@@ -3,6 +3,8 @@ pandas
 numpy
 scikit-learn
 scikit-fuzzy
+networkx
 matplotlib
 seaborn
+plotly
 joblib
