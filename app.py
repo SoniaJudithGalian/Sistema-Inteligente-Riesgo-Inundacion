@@ -82,6 +82,8 @@ nuevo_caso = pd.DataFrame({
 
 prediccion_ml = modelo.predict(nuevo_caso)
 
+prediccion_ml = modelo.predict(nuevo_caso)
+
 # =====================================================
 # INTERPRETAR CLASE ML
 # =====================================================
@@ -303,11 +305,10 @@ st.subheader("📊 Resultados")
 
 col1, col2 = st.columns(2)
 
-with col1:
-    st.metric(
-        "Predicción ML",
-        prediccion_ml[0]
-    )
+st.metric(
+    "Predicción ML",
+    prediccion_texto
+)
 
 with col2:
     st.metric(
@@ -466,8 +467,7 @@ detectó patrones similares a escenarios de riesgo:
 - ⛰️ Pendiente: {pendiente} %
 
 Predicción ML:
-➡️ {prediccion_ml[0]}
-""")
+➡️ {prediccion_texto}
 
 # =========================================================
 # MEDIDOR LOGICA DIFUSA
