@@ -411,7 +411,12 @@ st.subheader("🧠 Importancia de Variables - Machine Learning")
 importancias = modelo.feature_importances_
 
 df_importancia = pd.DataFrame({
-    "Variable": X.columns,
+    "Variable": [
+        "lluvia_mm",
+        "humedad_suelo",
+        "capacidad_drenaje",
+        "pendiente_topografica"
+    ],
     "Importancia": importancias
 })
 
