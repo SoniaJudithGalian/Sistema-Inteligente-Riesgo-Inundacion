@@ -581,7 +581,7 @@ with col1:
 
     st.metric(
         "Predicción ML",
-        prediccion_ml[0]
+        prediccion_texto
     )
 
 with col2:
