@@ -313,3 +313,246 @@ Posteriormente, el sistema de lógica difusa interpreta
 escenarios graduales e inciertos para generar un riesgo final
 más interpretable e inteligente.
 """)
+# =========================================================
+# VISUALIZACION AVANZADA ML + LOGICA DIFUSA
+# PEGAR DEBAJO DE LOS RESULTADOS
+# =========================================================
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.graph_objects as go
+
+# =========================================================
+# TITULO
+# =========================================================
+
+st.markdown("---")
+st.header("📈 Visualización Inteligente del Sistema")
+
+# =========================================================
+# VALORES INGRESADOS
+# =========================================================
+
+st.subheader("📥 Variables ingresadas")
+
+df_inputs = pd.DataFrame({
+    "Variable": [
+        "Lluvia",
+        "Humedad",
+        "Drenaje",
+        "Pendiente"
+    ],
+    "Valor": [
+        lluvia,
+        humedad,
+        drenaje,
+        pendiente
+    ]
+})
+
+st.dataframe(
+    df_inputs,
+    use_container_width=True
+)
+
+# =========================================================
+# GRAFICO VARIABLES INGRESADAS
+# =========================================================
+
+st.subheader("📊 Variables climáticas")
+
+fig_bar, ax = plt.subplots(figsize=(8,4))
+
+ax.bar(
+    df_inputs["Variable"],
+    df_inputs["Valor"]
+)
+
+ax.set_ylabel("Valor")
+ax.set_title("Valores ingresados")
+
+st.pyplot(fig_bar)
+
+# =========================================================
+# IMPORTANCIA DE VARIABLES ML
+# =========================================================
+
+st.subheader("🧠 Importancia de Variables - Machine Learning")
+
+importancias = modelo.feature_importances_
+
+df_importancia = pd.DataFrame({
+    "Variable": X.columns,
+    "Importancia": importancias
+})
+
+df_importancia = df_importancia.sort_values(
+    by="Importancia",
+    ascending=True
+)
+
+fig_imp, ax = plt.subplots(figsize=(8,4))
+
+ax.barh(
+    df_importancia["Variable"],
+    df_importancia["Importancia"]
+)
+
+ax.set_title("Importancia de Variables")
+ax.set_xlabel("Importancia")
+
+st.pyplot(fig_imp)
+
+# =========================================================
+# EXPLICACION ML
+# =========================================================
+
+st.info(f"""
+El modelo de Machine Learning analizó las variables ingresadas y
+detectó patrones similares a escenarios de riesgo:
+
+- 🌧️ Lluvia: {lluvia} mm
+- 💧 Humedad: {humedad} %
+- 🚰 Drenaje: {drenaje} %
+- ⛰️ Pendiente: {pendiente} %
+
+Predicción ML:
+➡️ {prediccion_ml[0]}
+""")
+
+# =========================================================
+# MEDIDOR LOGICA DIFUSA
+# =========================================================
+
+st.subheader("🌫️ Inferencia Difusa")
+
+fig_gauge = go.Figure(go.Indicator(
+
+    mode = "gauge+number",
+
+    value = riesgo_final,
+
+    title = {
+        'text': "Nivel de Riesgo Difuso"
+    },
+
+    gauge = {
+        'axis': {
+            'range': [0,100]
+        },
+
+        'steps': [
+
+            {
+                'range': [0,40],
+                'color': "green"
+            },
+
+            {
+                'range': [40,70],
+                'color': "yellow"
+            },
+
+            {
+                'range': [70,100],
+                'color': "red"
+            }
+        ]
+    }
+))
+
+st.plotly_chart(
+    fig_gauge,
+    use_container_width=True
+)
+
+# =========================================================
+# VISUALIZACION DIFUSA
+# =========================================================
+
+st.subheader("📉 Activación de Reglas Difusas")
+
+riesgo.view(sim=simulador)
+
+st.pyplot(plt.gcf())
+
+# =========================================================
+# INTERPRETACION FINAL
+# =========================================================
+
+st.subheader("🧾 Interpretación Inteligente")
+
+if riesgo_final >= 80:
+
+    interpretacion = """
+    El sistema detecta un escenario crítico de inundación.
+    
+    Existe alta probabilidad de acumulación de agua debido
+    a precipitaciones elevadas, drenaje insuficiente y
+    condiciones favorables para anegamientos.
+    """
+
+elif riesgo_final >= 60:
+
+    interpretacion = """
+    El sistema detecta un riesgo alto de inundación.
+    
+    Las variables climáticas presentan condiciones
+    potencialmente peligrosas.
+    """
+
+elif riesgo_final >= 40:
+
+    interpretacion = """
+    El sistema detecta un riesgo moderado.
+    
+    Se recomienda monitoreo preventivo.
+    """
+
+else:
+
+    interpretacion = """
+    El sistema detecta un riesgo bajo de inundación.
+    
+    Las condiciones actuales no representan peligro significativo.
+    """
+
+st.write(interpretacion)
+
+# =========================================================
+# COMPARACION ML VS DIFUSO
+# =========================================================
+
+st.subheader("⚖️ Comparación ML vs Lógica Difusa")
+
+col1, col2 = st.columns(2)
+
+with col1:
+
+    st.metric(
+        "Predicción ML",
+        prediccion_ml[0]
+    )
+
+with col2:
+
+    st.metric(
+        "Valor Difuso",
+        round(riesgo_final,2)
+    )
+
+# =========================================================
+# RESUMEN TECNICO
+# =========================================================
+
+st.markdown("---")
+
+st.success("""
+✅ El modelo Machine Learning aprende patrones de inundación
+a partir de datos históricos simulados.
+
+✅ La lógica difusa interpreta escenarios graduales e inciertos.
+
+✅ El sistema híbrido combina predicción automática +
+razonamiento inteligente.
+""")
