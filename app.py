@@ -83,6 +83,21 @@ nuevo_caso = pd.DataFrame({
 prediccion_ml = modelo.predict(nuevo_caso)
 
 # =====================================================
+# INTERPRETAR CLASE ML
+# =====================================================
+
+clases_riesgo = {
+    0: "🟢 Bajo",
+    1: "🟡 Medio",
+    2: "🟠 Alto",
+    3: "🔴 Crítico"
+}
+
+prediccion_texto = clases_riesgo.get(
+    int(prediccion_ml[0]),
+    "Desconocido"
+)
+# =====================================================
 # LOGICA DIFUSA
 # =====================================================
 
