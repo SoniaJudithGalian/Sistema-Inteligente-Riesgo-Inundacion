@@ -82,8 +82,6 @@ nuevo_caso = pd.DataFrame({
 
 prediccion_ml = modelo.predict(nuevo_caso)
 
-prediccion_ml = modelo.predict(nuevo_caso)
-
 # =====================================================
 # INTERPRETAR CLASE ML
 # =====================================================
@@ -305,17 +303,17 @@ st.subheader("📊 Resultados")
 
 col1, col2 = st.columns(2)
 
-st.metric(
-    "Predicción ML",
-    prediccion_texto
-)
+with col1:
+    st.metric(
+        "Predicción ML",
+        prediccion_texto
+    )
 
 with col2:
     st.metric(
         "Riesgo Difuso",
-        round(riesgo_final,2)
+        round(riesgo_final, 2)
     )
-
 # =====================================================
 # ALERTAS
 # =====================================================
