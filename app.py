@@ -595,11 +595,11 @@ with col2:
 # =========================================================
 
 st.success("""
-El modelo Machine Learning aprende patrones de inundación
-a partir de datos históricos simulados.
+ El modelo Machine Learning aprende patrones de inundación
+ a partir de datos históricos simulados.
 
-La lógica difusa interpreta escenarios graduales e inciertos.
+ La lógica difusa interpreta escenarios graduales e inciertos.
 
-El sistema híbrido combina predicción automática +
-razonamiento inteligente.
+ El sistema híbrido combina predicción automática +
+ razonamiento inteligente.
 """)
