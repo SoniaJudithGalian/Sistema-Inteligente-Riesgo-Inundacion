@@ -219,6 +219,31 @@ regla4 = ctrl.Rule(
     riesgo['alto']
 )
 
+regla5 = ctrl.Rule(
+    lluvia_fz['alta'],
+    riesgo['alto']
+)
+
+regla6 = ctrl.Rule(
+    lluvia_fz['media'],
+    riesgo['medio']
+)
+
+regla7 = ctrl.Rule(
+    lluvia_fz['baja'],
+    riesgo['bajo']
+)
+
+regla8 = ctrl.Rule(
+    drenaje_fz['bajo'],
+    riesgo['alto']
+)
+
+regla9 = ctrl.Rule(
+    drenaje_fz['alto'],
+    riesgo['bajo']
+)
+
 # =====================================================
 # SISTEMA DIFUSO
 # =====================================================
@@ -227,7 +252,12 @@ sistema = ctrl.ControlSystem([
     regla1,
     regla2,
     regla3,
-    regla4
+    regla4,
+    regla5,
+    regla6,
+    regla7,
+    regla8,
+    regla9
 ])
 
 simulador = ctrl.ControlSystemSimulation(
@@ -248,8 +278,7 @@ simulador.input['pendiente'] = pendiente
 # =====================================================
 
 simulador.compute()
-
-riesgo_final = simulador.output['riesgo']
+riesgo_final = simulador.output.get('riesgo', 0)
 
 # =====================================================
 # RESULTADOS
