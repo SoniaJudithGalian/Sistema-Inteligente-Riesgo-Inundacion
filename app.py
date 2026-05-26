@@ -593,9 +593,6 @@ with col2:
 # =========================================================
 # RESUMEN TECNICO
 # =========================================================
-
-st.markdown("---")
-
 st.success("""
 ✅ El modelo Machine Learning aprende patrones de inundación
 a partir de datos históricos simulados.
