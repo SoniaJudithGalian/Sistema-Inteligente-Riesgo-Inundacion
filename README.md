@@ -6,6 +6,15 @@ Este proyecto consiste en el desarrollo de un sistema inteligente para evaluar e
 
 El objetivo principal es construir una herramienta capaz de asistir en la toma de decisiones preventivas frente a posibles inundaciones, considerando variables climáticas e hidrológicas.
 
+## 🚀 Ver aplicación online
+
+Podés probar la aplicación interactiva desde el siguiente enlace:
+
+🔗 [Ver aplicación en Streamlit](https://sistema-inteligente-riesgo-inundacion-h8dzjxpdcxg5xe3ktyqn4d.streamlit.app/)
+
+
+
+
 ## 🧠 Tecnologías utilizadas
 
 - Python
