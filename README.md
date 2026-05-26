@@ -1,84 +1,88 @@
-# Sistema-Inteligente-Riesgo-Inundacion
-Sistema inteligente híbrido para predicción de riesgo de inundaciones utilizando Machine Learning y Lógica Difusa.
-# 🌊 Sistema Inteligente Híbrido para Predicción de Riesgo de Inundaciones
+# 🌊 Sistema Inteligente de Riesgo de Inundaciones
 
-Sistema inteligente híbrido para predicción y evaluación de riesgo de inundaciones utilizando Machine Learning y Lógica Difusa.
+Este proyecto consiste en el desarrollo de un sistema inteligente para evaluar el riesgo de inundaciones utilizando Machine Learning y Lógica Difusa.
 
-El proyecto integra modelos predictivos basados en Random Forest con un sistema de inferencia difusa para analizar variables hidrometeorológicas como precipitación, humedad del suelo, capacidad de drenaje y pendiente topográfica.
+## 🎯 Objetivo
 
----
+El objetivo principal es construir una herramienta capaz de asistir en la toma de decisiones preventivas frente a posibles inundaciones, considerando variables climáticas e hidrológicas.
 
-# 🚀 Características
-
-✔ Predicción automática de riesgo de inundación  
-✔ Integración de Machine Learning + Lógica Difusa  
-✔ Dashboard interactivo con Streamlit  
-✔ Visualización de datos y métricas  
-✔ Sistema de inferencia difusa  
-✔ Clasificación inteligente de riesgo hídrico  
-✔ Interpretabilidad del modelo  
-✔ Análisis exploratorio de datos (EDA)
-
----
-
-# 🧠 Tecnologías Utilizadas
+## 🧠 Tecnologías utilizadas
 
 - Python
-- Scikit-Learn
-- Scikit-Fuzzy
+- Streamlit
 - Pandas
 - NumPy
-- Streamlit
+- Scikit-learn
+- Scikit-fuzzy
 - Matplotlib
-- Seaborn
+- Plotly
+- Joblib
+- Google Colab
+- GitHub
 
----
+## 📊 Variables del sistema
 
-# 📊 Variables del Sistema
+El sistema utiliza las siguientes variables de entrada:
 
-## Variables de Entrada
+- Lluvia acumulada en milímetros
+- Humedad del suelo
+- Capacidad de drenaje
+- Pendiente topográfica
 
-| Variable | Descripción |
-|---|---|
-| lluvia_mm | Precipitación acumulada |
-| humedad_suelo | Humedad del suelo |
-| capacidad_drenaje | Capacidad de drenaje |
-| pendiente_topografica | Pendiente del terreno |
+## 🤖 Machine Learning
 
----
+Se entrenó un modelo de clasificación Random Forest para predecir el nivel de riesgo de inundación.
 
-## Variable de Salida
+Las clases utilizadas fueron:
 
-| Variable | Descripción |
-|---|---|
-| riesgo_inundacion | Nivel de riesgo hídrico |
+- 🟢 Bajo
+- 🟡 Medio
+- 🟠 Alto
+- 🔴 Crítico
 
-Categorías:
-- Bajo
-- Medio
-- Alto
-- Crítico
+El modelo fue entrenado en Google Colab con datos simulados y luego exportado como `modelo_ml.pkl`.
 
----
+## 🌫️ Lógica Difusa
 
-# 🤖 Machine Learning
+Además del modelo de Machine Learning, se implementó un sistema experto difuso.
 
-El modelo de Machine Learning fue entrenado utilizando Random Forest para aprender patrones asociados al riesgo de inundación a partir de datos hidrometeorológicos simulados.
+Este sistema utiliza reglas del tipo:
 
-El sistema permite:
-- entrenar modelos predictivos
-- realizar predicciones automáticas
-- evaluar métricas de rendimiento
-- identificar variables importantes
+- Si la lluvia es alta y el drenaje es bajo, entonces el riesgo es alto.
+- Si la lluvia es baja y el drenaje es alto, entonces el riesgo es bajo.
+- Si la humedad está saturada y la lluvia es alta, entonces el riesgo aumenta.
 
----
+La lógica difusa permite interpretar situaciones inciertas y graduales.
 
-# 🌫️ Lógica Difusa
+## 🖥️ Aplicación Streamlit
 
-El sistema difuso permite representar incertidumbre y escenarios graduales de riesgo utilizando funciones de membresía y reglas difusas.
+La aplicación permite al usuario ingresar valores mediante sliders:
 
-Ejemplo de regla:
+- Lluvia
+- Humedad
+- Drenaje
+- Pendiente
 
-```python
-SI lluvia ES alta Y drenaje ES bajo
-ENTONCES riesgo ES alto
+Luego muestra:
+
+- Predicción del modelo ML
+- Resultado del sistema difuso
+- Alertas visuales
+- Gráficos de variables
+- Importancia de variables
+- Medidor de riesgo
+- Interpretación final automática
+
+## 📁 Estructura del proyecto
+
+```bash
+sistema-riesgo-inundaciones/
+│
+├── app.py
+├── modelo_ml.pkl
+├── README.md
+├── requirements.txt
+└── notebooks/
+    ├── entrenamiento_modelo_ml.ipynb
+    └── sistema_experto_difuso.ipynb
+
