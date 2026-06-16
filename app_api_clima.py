@@ -348,73 +348,93 @@ elif riesgo_final >= 40:
 else:
     st.success("🟢 RIESGO BAJO")
 
+
 # =====================================================
-# SEMAFORO DE RIESGO DIFUSO
+# SEMAFORO DE RIESGO DIFUSO CON PLOTLY
 # =====================================================
 
 st.subheader("🚦 Semáforo de Riesgo Difuso")
 
 def obtener_nivel_difuso(valor):
     if valor >= 80:
-        return "Crítico", "rojo"
+        return "Crítico", "#EF4444"
     elif valor >= 60:
-        return "Alto", "naranja"
+        return "Alto", "#F97316"
     elif valor >= 40:
-        return "Medio", "amarillo"
+        return "Medio", "#FACC15"
     else:
-        return "Bajo", "verde"
+        return "Bajo", "#22C55E"
 
 nivel_difuso, color_activo = obtener_nivel_difuso(riesgo_final)
 
-color_verde = "#22C55E" if color_activo == "verde" else "#D1D5DB"
-color_amarillo = "#FACC15" if color_activo == "amarillo" else "#D1D5DB"
-color_naranja = "#F97316" if color_activo == "naranja" else "#D1D5DB"
-color_rojo = "#EF4444" if color_activo == "rojo" else "#D1D5DB"
+# Colores apagados
+gris = "#D1D5DB"
 
-st.markdown(f"""
-<div style="
-    background-color: white;
-    padding: 25px;
-    border-radius: 18px;
-    border: 1px solid #E2E8F0;
-    box-shadow: 0px 4px 14px rgba(0,0,0,0.06);
-">
+color_bajo = "#22C55E" if nivel_difuso == "Bajo" else gris
+color_medio = "#FACC15" if nivel_difuso == "Medio" else gris
+color_alto = "#F97316" if nivel_difuso == "Alto" else gris
+color_critico = "#EF4444" if nivel_difuso == "Crítico" else gris
 
-    <div style="display:flex; justify-content:center; gap:30px; margin-bottom:20px; flex-wrap:wrap;">
+fig_semaforo = go.Figure()
 
-        <div style="text-align:center;">
-            <div style="width:70px; height:70px; border-radius:50%; background:{color_verde}; margin:auto; border:2px solid #CBD5E1;"></div>
-            <p style="margin-top:8px; font-weight:600;">Bajo</p>
-        </div>
+# Círculos del semáforo
+fig_semaforo.add_shape(
+    type="circle",
+    x0=0.05, y0=0.25,
+    x1=0.25, y1=0.75,
+    fillcolor=color_bajo,
+    line=dict(color="#CBD5E1", width=2)
+)
 
-        <div style="text-align:center;">
-            <div style="width:70px; height:70px; border-radius:50%; background:{color_amarillo}; margin:auto; border:2px solid #CBD5E1;"></div>
-            <p style="margin-top:8px; font-weight:600;">Medio</p>
-        </div>
+fig_semaforo.add_shape(
+    type="circle",
+    x0=0.30, y0=0.25,
+    x1=0.50, y1=0.75,
+    fillcolor=color_medio,
+    line=dict(color="#CBD5E1", width=2)
+)
 
-        <div style="text-align:center;">
-            <div style="width:70px; height:70px; border-radius:50%; background:{color_naranja}; margin:auto; border:2px solid #CBD5E1;"></div>
-            <p style="margin-top:8px; font-weight:600;">Alto</p>
-        </div>
+fig_semaforo.add_shape(
+    type="circle",
+    x0=0.55, y0=0.25,
+    x1=0.75, y1=0.75,
+    fillcolor=color_alto,
+    line=dict(color="#CBD5E1", width=2)
+)
 
-        <div style="text-align:center;">
-            <div style="width:70px; height:70px; border-radius:50%; background:{color_rojo}; margin:auto; border:2px solid #CBD5E1;"></div>
-            <p style="margin-top:8px; font-weight:600;">Crítico</p>
-        </div>
+fig_semaforo.add_shape(
+    type="circle",
+    x0=0.80, y0=0.25,
+    x1=1.00, y1=0.75,
+    fillcolor=color_critico,
+    line=dict(color="#CBD5E1", width=2)
+)
 
-    </div>
+# Textos debajo
+fig_semaforo.add_annotation(x=0.15, y=0.08, text="Bajo", showarrow=False, font=dict(size=16))
+fig_semaforo.add_annotation(x=0.40, y=0.08, text="Medio", showarrow=False, font=dict(size=16))
+fig_semaforo.add_annotation(x=0.65, y=0.08, text="Alto", showarrow=False, font=dict(size=16))
+fig_semaforo.add_annotation(x=0.90, y=0.08, text="Crítico", showarrow=False, font=dict(size=16))
 
-    <h3 style="text-align:center; color:#0F172A; margin-bottom:5px;">
-        Nivel actual: {nivel_difuso}
-    </h3>
+# Texto principal
+fig_semaforo.add_annotation(
+    x=0.5,
+    y=1.05,
+    text=f"Nivel actual: {nivel_difuso} | Riesgo difuso: {round(riesgo_final, 2)} / 100",
+    showarrow=False,
+    font=dict(size=20, color="#0F172A")
+)
 
-    <p style="text-align:center; color:#475569; font-size:18px;">
-        Riesgo difuso calculado: <strong>{round(riesgo_final, 2)} / 100</strong>
-    </p>
+fig_semaforo.update_layout(
+    height=300,
+    xaxis=dict(visible=False, range=[0, 1.05]),
+    yaxis=dict(visible=False, range=[0, 1.15]),
+    plot_bgcolor="white",
+    paper_bgcolor="white",
+    margin=dict(l=20, r=20, t=60, b=20)
+)
 
-</div>
-""", unsafe_allow_html=True)
-
+st.plotly_chart(fig_semaforo, use_container_width=True)
 
 
 # =====================================================
