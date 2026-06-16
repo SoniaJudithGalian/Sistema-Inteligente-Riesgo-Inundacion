@@ -86,6 +86,35 @@ st.markdown("""
 
 modelo = joblib.load("modelo_ml.pkl")
 
+
+# =====================================================
+# API DE CLIMA - OPEN METEO
+# =====================================================
+
+@st.cache_data(ttl=1800)
+def obtener_clima_open_meteo(latitud, longitud):
+    url = "https://api.open-meteo.com/v1/forecast"
+
+    params = {
+        "latitude": latitud,
+        "longitude": longitud,
+        "hourly": "precipitation,relative_humidity_2m",
+        "forecast_days": 1,
+        "timezone": "America/Argentina/Buenos_Aires"
+    }
+
+    response = requests.get(url, params=params, timeout=10)
+    response.raise_for_status()
+
+    data = response.json()
+
+    df_clima = pd.DataFrame(data["hourly"])
+
+    lluvia_24h = df_clima["precipitation"].sum()
+    humedad_promedio = df_clima["relative_humidity_2m"].mean()
+
+    return lluvia_24h, humedad_promedio, df_clima
+    
 # =====================================================
 # TITULO
 # =====================================================
@@ -110,22 +139,103 @@ Sistema híbrido basado en:
 # =====================================================
 # SIDEBAR
 # =====================================================
+# =====================================================
+# SELECCION DE UBICACION
+# =====================================================
 
-st.sidebar.header("Variables de Entrada")
+st.sidebar.header("🌎 Ubicación")
 
-lluvia = st.sidebar.slider(
-    "🌧️ Lluvia (mm)",
-    0,
-    120,
-    50
+ciudad = st.sidebar.selectbox(
+    "Seleccionar ciudad",
+    [
+        "Neuquén Capital",
+        "Añelo",
+        "Rincón de los Sauces",
+        "Centenario",
+        "Plottier",
+        "Cutral Có"
+    ]
 )
 
-humedad = st.sidebar.slider(
-    "💧 Humedad del suelo (%)",
-    0,
-    100,
-    50
+coordenadas = {
+    "Neuquén Capital": (-38.9516, -68.0591),
+    "Añelo": (-38.3544, -68.7884),
+    "Rincón de los Sauces": (-37.3906, -68.9250),
+    "Centenario": (-38.8296, -68.1318),
+    "Plottier": (-38.9667, -68.2333),
+    "Cutral Có": (-38.9369, -69.2305)
+}
+
+latitud, longitud = coordenadas[ciudad]
+
+# =====================================================
+# OBTENER DATOS REALES / PRONOSTICADOS
+# =====================================================
+
+usar_api = st.sidebar.checkbox(
+    "Usar datos climáticos automáticos",
+    value=True
 )
+
+if usar_api:
+    try:
+        lluvia_api, humedad_api, df_clima = obtener_clima_open_meteo(
+            latitud,
+            longitud
+        )
+
+        lluvia = round(float(lluvia_api), 2)
+        humedad = round(float(humedad_api), 2)
+
+        st.sidebar.success("Datos climáticos cargados correctamente")
+
+        st.sidebar.metric(
+            "🌧️ Lluvia estimada 24h",
+            f"{lluvia} mm"
+        )
+
+        st.sidebar.metric(
+            "💧 Humedad promedio 24h",
+            f"{humedad} %"
+        )
+
+    except Exception as e:
+        st.sidebar.error("No se pudieron cargar los datos climáticos.")
+        st.sidebar.info("Se usarán valores manuales.")
+
+        lluvia = st.sidebar.slider(
+            "🌧️ Lluvia manual (mm)",
+            0,
+            120,
+            50
+        )
+
+        humedad = st.sidebar.slider(
+            "💧 Humedad manual (%)",
+            0,
+            100,
+            50
+        )
+
+        df_clima = None
+
+else:
+    lluvia = st.sidebar.slider(
+        "🌧️ Lluvia manual (mm)",
+        0,
+        120,
+        50
+    )
+
+    humedad = st.sidebar.slider(
+        "💧 Humedad manual (%)",
+        0,
+        100,
+        50
+    )
+
+    df_clima = None
+    st.sidebar.header("🏙️ Variables territoriales")
 
 drenaje = st.sidebar.slider(
     "🚰 Capacidad de drenaje (%)",
@@ -140,6 +250,8 @@ pendiente = st.sidebar.slider(
     10,
     5
 )
+
+
 
 # =====================================================
 # MACHINE LEARNING
