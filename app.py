@@ -14,6 +14,71 @@ st.set_page_config(
     page_title="Riesgo de Inundaciones",
     layout="wide"
 )
+# =====================================================
+# ESTILO VISUAL MODERNO
+# =====================================================
+
+st.markdown("""
+<style>
+
+[data-testid="stAppViewContainer"] {
+    background-color: #F8FAFC;
+}
+
+[data-testid="stSidebar"] {
+    background-color: #E2E8F0;
+}
+
+.main-title {
+    font-size: 42px;
+    font-weight: 800;
+    color: #0F172A;
+    margin-bottom: 0px;
+}
+
+.subtitle {
+    font-size: 18px;
+    color: #475569;
+    margin-bottom: 25px;
+}
+
+.card {
+    background-color: white;
+    padding: 24px;
+    border-radius: 18px;
+    box-shadow: 0px 6px 20px rgba(15, 23, 42, 0.08);
+    border: 1px solid #E2E8F0;
+    margin-bottom: 18px;
+}
+
+.card-title {
+    font-size: 15px;
+    color: #64748B;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.card-value {
+    font-size: 30px;
+    color: #0F172A;
+    font-weight: 800;
+}
+
+.card-small {
+    font-size: 14px;
+    color: #64748B;
+}
+
+.section-title {
+    font-size: 25px;
+    font-weight: 800;
+    color: #0F172A;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+</style>
+""", unsafe_allow_html=True)
 
 # =====================================================
 # CARGAR MODELO
@@ -25,7 +90,14 @@ modelo = joblib.load("modelo_ml.pkl")
 # TITULO
 # =====================================================
 
-st.title("🌊 Sistema Inteligente de Riesgo de Inundaciones")
+st.markdown('<p class="main-title">🌊 Sistema Inteligente de Riesgo de Inundaciones</p>', unsafe_allow_html=True)
+
+st.markdown("""
+<p class="subtitle">
+Sistema híbrido que combina Machine Learning y Lógica Difusa para estimar el riesgo de inundación
+a partir de variables climáticas y territoriales.
+</p>
+""", unsafe_allow_html=True)
 
 st.markdown("""
 Sistema híbrido basado en:
@@ -250,9 +322,11 @@ regla7 = ctrl.Rule(
 )
 
 regla8 = ctrl.Rule(
+    (lluvia_fz['media'] | lluvia_fz['alta']) &
     drenaje_fz['bajo'],
     riesgo['alto']
 )
+
 
 regla9 = ctrl.Rule(
     drenaje_fz['alto'],
@@ -296,309 +370,458 @@ simulador.compute()
 riesgo_final = simulador.output.get('riesgo', 0)
 
 # =====================================================
-# RESULTADOS
+# RESULTADOS - DISEÑO MODERNO
 # =====================================================
 
-st.subheader("📊 Resultados")
+import plotly.graph_objects as go
+import plotly.express as px
 
-col1, col2 = st.columns(2)
+# Paleta profesional
+COLOR_AZUL = "#0F172A"
+COLOR_CELESTE = "#38BDF8"
+COLOR_VERDE = "#22C55E"
+COLOR_AMARILLO = "#FACC15"
+COLOR_NARANJA = "#F97316"
+COLOR_ROJO = "#EF4444"
+COLOR_GRIS = "#64748B"
+
+
+def obtener_nivel_riesgo(valor):
+    if valor >= 80:
+        return "Crítico", "🚨", COLOR_ROJO
+    elif valor >= 60:
+        return "Alto", "⚠️", COLOR_NARANJA
+    elif valor >= 40:
+        return "Medio", "🟡", COLOR_AMARILLO
+    else:
+        return "Bajo", "🟢", COLOR_VERDE
+
+
+nivel_difuso, icono_difuso, color_difuso = obtener_nivel_riesgo(riesgo_final)
+
+
+st.markdown("---")
+st.markdown('<p class="section-title">📊 Panel de Resultados</p>', unsafe_allow_html=True)
+
+col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.metric(
-        "Predicción ML",
-        prediccion_texto
-    )
+    st.markdown(f"""
+    <div class="card">
+        <div class="card-title">Predicción Machine Learning</div>
+        <div class="card-value">{prediccion_texto}</div>
+        <div class="card-small">Clasificación generada por el modelo entrenado</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 with col2:
-    st.metric(
-        "Riesgo Difuso",
-        round(riesgo_final, 2)
-    )
+    st.markdown(f"""
+    <div class="card">
+        <div class="card-title">Riesgo Difuso</div>
+        <div class="card-value">{round(riesgo_final, 2)} / 100</div>
+        <div class="card-small">Resultado del sistema de lógica difusa</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col3:
+    st.markdown(f"""
+    <div class="card">
+        <div class="card-title">Nivel Interpretado</div>
+        <div class="card-value">{icono_difuso} {nivel_difuso}</div>
+        <div class="card-small">Lectura final del escenario analizado</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
 # =====================================================
-# ALERTAS
+# ALERTA VISUAL
 # =====================================================
 
 if riesgo_final >= 80:
-
-    st.error(
-        "🚨 RIESGO CRÍTICO DE INUNDACIÓN"
-    )
-
+    st.error("🚨 RIESGO CRÍTICO DE INUNDACIÓN: se recomienda intervención inmediata.")
 elif riesgo_final >= 60:
-
-    st.warning(
-        "⚠️ RIESGO ALTO"
-    )
-
+    st.warning("⚠️ RIESGO ALTO: se recomienda monitoreo y prevención.")
 elif riesgo_final >= 40:
-
-    st.info(
-        "🟡 RIESGO MEDIO"
-    )
-
+    st.info("🟡 RIESGO MEDIO: se recomienda seguimiento preventivo.")
 else:
+    st.success("🟢 RIESGO BAJO: las condiciones actuales no presentan peligro significativo.")
 
-    st.success(
-        "🟢 RIESGO BAJO"
-    )
 
 # =====================================================
-# INTERPRETACION
+# DATAFRAME DE VARIABLES
 # =====================================================
-
-st.subheader("🧠 Interpretación")
-
-st.write("""
-El modelo de Machine Learning aprende patrones asociados
-al riesgo de inundación a partir de datos hidrometeorológicos.
-
-Posteriormente, el sistema de lógica difusa interpreta
-escenarios graduales e inciertos para generar un riesgo final
-más interpretable e inteligente.
-""")
-# =========================================================
-# VISUALIZACION AVANZADA ML + LOGICA DIFUSA
-# PEGAR DEBAJO DE LOS RESULTADOS
-# =========================================================
-
-import matplotlib.pyplot as plt
-import seaborn as sns
-import plotly.graph_objects as go
-
-# =========================================================
-# TITULO
-# =========================================================
-
-st.markdown("---")
-st.header("📈 Visualización Inteligente del Sistema")
-
-# =========================================================
-# VALORES INGRESADOS
-# =========================================================
-
-st.subheader("📥 Variables ingresadas")
 
 df_inputs = pd.DataFrame({
     "Variable": [
         "Lluvia",
-        "Humedad",
-        "Drenaje",
-        "Pendiente"
+        "Humedad del suelo",
+        "Capacidad de drenaje",
+        "Pendiente topográfica"
     ],
     "Valor": [
         lluvia,
         humedad,
         drenaje,
         pendiente
+    ],
+    "Máximo": [
+        120,
+        100,
+        100,
+        10
+    ],
+    "Unidad": [
+        "mm",
+        "%",
+        "%",
+        "%"
     ]
 })
 
-st.dataframe(
-    df_inputs,
-    use_container_width=True
-)
+df_inputs["Porcentaje"] = round((df_inputs["Valor"] / df_inputs["Máximo"]) * 100, 2)
+df_inputs["Etiqueta"] = df_inputs["Valor"].astype(str) + " " + df_inputs["Unidad"]
 
-# =========================================================
-# GRAFICO VARIABLES INGRESADAS
-# =========================================================
 
-st.subheader("📊 Variables climáticas")
+# =====================================================
+# GRAFICOS DE ENTRADA
+# =====================================================
 
-fig_bar, ax = plt.subplots(figsize=(8,4))
+st.markdown('<p class="section-title">📥 Variables de Entrada</p>', unsafe_allow_html=True)
 
-ax.bar(
-    df_inputs["Variable"],
-    df_inputs["Valor"]
-)
+col1, col2 = st.columns([1.1, 1])
 
-ax.set_ylabel("Valor")
-ax.set_title("Valores ingresados")
+with col1:
+    fig_barras = px.bar(
+        df_inputs,
+        x="Porcentaje",
+        y="Variable",
+        orientation="h",
+        text="Etiqueta",
+        color="Variable",
+        color_discrete_sequence=[
+            "#38BDF8",
+            "#0EA5E9",
+            "#22C55E",
+            "#A855F7"
+        ]
+    )
 
-st.pyplot(fig_bar)
+    fig_barras.update_traces(
+        textposition="outside",
+        marker_line_width=0
+    )
 
-# =========================================================
-# IMPORTANCIA DE VARIABLES ML
-# =========================================================
+    fig_barras.update_layout(
+        title="Valores ingresados normalizados",
+        xaxis_title="Porcentaje sobre el valor máximo",
+        yaxis_title="",
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        showlegend=False,
+        height=380,
+        font=dict(color="#0F172A"),
+        xaxis=dict(range=[0, 110])
+    )
 
-st.subheader("🧠 Importancia de Variables - Machine Learning")
+    st.plotly_chart(fig_barras, use_container_width=True)
 
-importancias = modelo.feature_importances_
+with col2:
+    fig_radar = go.Figure()
 
-df_importancia = pd.DataFrame({
-    "Variable": [
-        "lluvia_mm",
-        "humedad_suelo",
-        "capacidad_drenaje",
-        "pendiente_topografica"
-    ],
-    "Importancia": importancias
-})
+    fig_radar.add_trace(go.Scatterpolar(
+        r=df_inputs["Porcentaje"],
+        theta=df_inputs["Variable"],
+        fill="toself",
+        name="Valores ingresados",
+        line=dict(color=COLOR_CELESTE, width=3)
+    ))
 
-df_importancia = df_importancia.sort_values(
-    by="Importancia",
-    ascending=True
-)
+    fig_radar.update_layout(
+        title="Perfil general del escenario",
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 100]
+            )
+        ),
+        showlegend=False,
+        height=380,
+        paper_bgcolor="white",
+        font=dict(color="#0F172A")
+    )
 
-fig_imp, ax = plt.subplots(figsize=(8,4))
+    st.plotly_chart(fig_radar, use_container_width=True)
 
-ax.barh(
-    df_importancia["Variable"],
-    df_importancia["Importancia"]
-)
 
-ax.set_title("Importancia de Variables")
-ax.set_xlabel("Importancia")
+# =====================================================
+# MEDIDOR DE RIESGO DIFUSO
+# =====================================================
 
-st.pyplot(fig_imp)
-
-# =========================================================
-# EXPLICACION ML
-# =========================================================
-
-st.info(f"""
-El modelo de Machine Learning analizó las variables ingresadas y
-detectó patrones similares a escenarios de riesgo:
-
-- 🌧️ Lluvia: {lluvia} mm
-- 💧 Humedad: {humedad} %
-- 🚰 Drenaje: {drenaje} %
-- ⛰️ Pendiente: {pendiente} %
-
-Predicción ML:
-➡️ {prediccion_texto}
-""")
-
-# =========================================================
-# MEDIDOR LOGICA DIFUSA
-# =========================================================
-
-st.subheader("🌫️ Inferencia Difusa")
+st.markdown('<p class="section-title">🌫️ Medidor de Riesgo Difuso</p>', unsafe_allow_html=True)
 
 fig_gauge = go.Figure(go.Indicator(
-
-    mode = "gauge+number",
-
-    value = riesgo_final,
-
-    title = {
-        'text': "Nivel de Riesgo Difuso"
+    mode="gauge+number",
+    value=riesgo_final,
+    number={
+        "suffix": " / 100",
+        "font": {"size": 36, "color": COLOR_AZUL}
     },
-
-    gauge = {
-        'axis': {
-            'range': [0,100]
+    title={
+        "text": f"Nivel de Riesgo: {nivel_difuso}",
+        "font": {"size": 22, "color": COLOR_AZUL}
+    },
+    gauge={
+        "axis": {
+            "range": [0, 100],
+            "tickwidth": 1,
+            "tickcolor": COLOR_GRIS
         },
-
-        'steps': [
-
-            {
-                'range': [0,40],
-                'color': "green"
-            },
-
-            {
-                'range': [40,70],
-                'color': "yellow"
-            },
-
-            {
-                'range': [70,100],
-                'color': "red"
-            }
-        ]
+        "bar": {
+            "color": color_difuso
+        },
+        "bgcolor": "white",
+        "borderwidth": 1,
+        "bordercolor": "#CBD5E1",
+        "steps": [
+            {"range": [0, 40], "color": "#DCFCE7"},
+            {"range": [40, 60], "color": "#FEF9C3"},
+            {"range": [60, 80], "color": "#FFEDD5"},
+            {"range": [80, 100], "color": "#FEE2E2"}
+        ],
+        "threshold": {
+            "line": {"color": COLOR_AZUL, "width": 4},
+            "thickness": 0.75,
+            "value": riesgo_final
+        }
     }
 ))
 
-st.plotly_chart(
-    fig_gauge,
-    use_container_width=True
+fig_gauge.update_layout(
+    height=420,
+    paper_bgcolor="white",
+    font=dict(color=COLOR_AZUL)
 )
 
-# =========================================================
-# VISUALIZACION DIFUSA
-# =========================================================
+st.plotly_chart(fig_gauge, use_container_width=True)
 
-st.subheader("📉 Activación de Reglas Difusas")
 
-riesgo.view(sim=simulador)
+# =====================================================
+# IMPORTANCIA DE VARIABLES ML
+# =====================================================
 
-st.pyplot(plt.gcf())
+st.markdown('<p class="section-title">🧠 Importancia de Variables del Modelo ML</p>', unsafe_allow_html=True)
 
-# =========================================================
-# INTERPRETACION FINAL
-# =========================================================
+modelo_base = modelo
 
-st.subheader("🧾 Interpretación Inteligente")
+if hasattr(modelo, "named_steps"):
+    modelo_base = list(modelo.named_steps.values())[-1]
 
-if riesgo_final >= 80:
+if hasattr(modelo_base, "feature_importances_"):
 
-    interpretacion = """
-    El sistema detecta un escenario crítico de inundación.
-    
-    Existe alta probabilidad de acumulación de agua debido
-    a precipitaciones elevadas, drenaje insuficiente y
-    condiciones favorables para anegamientos.
-    """
+    importancias = modelo_base.feature_importances_
 
-elif riesgo_final >= 60:
+    df_importancia = pd.DataFrame({
+        "Variable": [
+            "Lluvia",
+            "Humedad",
+            "Drenaje",
+            "Pendiente"
+        ],
+        "Importancia": importancias
+    })
 
-    interpretacion = """
-    El sistema detecta un riesgo alto de inundación.
-    
-    Las variables climáticas presentan condiciones
-    potencialmente peligrosas.
-    """
+    df_importancia = df_importancia.sort_values(
+        by="Importancia",
+        ascending=True
+    )
 
-elif riesgo_final >= 40:
+    fig_imp = px.bar(
+        df_importancia,
+        x="Importancia",
+        y="Variable",
+        orientation="h",
+        text=round(df_importancia["Importancia"], 3),
+        color="Importancia",
+        color_continuous_scale="Blues"
+    )
 
-    interpretacion = """
-    El sistema detecta un riesgo moderado.
-    
-    Se recomienda monitoreo preventivo.
-    """
+    fig_imp.update_traces(
+        textposition="outside"
+    )
+
+    fig_imp.update_layout(
+        title="Variables más influyentes según el modelo",
+        xaxis_title="Importancia",
+        yaxis_title="",
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        height=380,
+        font=dict(color="#0F172A"),
+        coloraxis_showscale=False
+    )
+
+    st.plotly_chart(fig_imp, use_container_width=True)
 
 else:
+    st.info(
+        "El modelo cargado no tiene atributo feature_importances_. "
+        "Esto puede pasar si usás Regresión Logística u otro modelo que no calcula importancia de variables directamente."
+    )
 
+
+# =====================================================
+# FUNCIONES DE PERTENENCIA DIFUSA
+# =====================================================
+
+st.markdown('<p class="section-title">📉 Funciones de Pertenencia Difusa</p>', unsafe_allow_html=True)
+
+def graficar_pertenencia(variable_fz, valor_actual, titulo, unidad):
+    fig = go.Figure()
+
+    colores = [
+        "#22C55E",
+        "#FACC15",
+        "#EF4444",
+        "#38BDF8"
+    ]
+
+    for i, nombre in enumerate(variable_fz.terms):
+        fig.add_trace(go.Scatter(
+            x=variable_fz.universe,
+            y=variable_fz[nombre].mf,
+            mode="lines",
+            name=nombre.capitalize(),
+            line=dict(width=3, color=colores[i % len(colores)])
+        ))
+
+    fig.add_vline(
+        x=valor_actual,
+        line_width=3,
+        line_dash="dash",
+        line_color="#0F172A",
+        annotation_text=f"Valor actual: {valor_actual} {unidad}",
+        annotation_position="top"
+    )
+
+    fig.update_layout(
+        title=titulo,
+        xaxis_title=unidad,
+        yaxis_title="Grado de pertenencia",
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        height=350,
+        font=dict(color="#0F172A"),
+        legend_title="Categorías"
+    )
+
+    return fig
+
+
+tab1, tab2, tab3, tab4 = st.tabs([
+    "🌧️ Lluvia",
+    "💧 Humedad",
+    "🚰 Drenaje",
+    "⛰️ Pendiente"
+])
+
+with tab1:
+    st.plotly_chart(
+        graficar_pertenencia(lluvia_fz, lluvia, "Pertenencia difusa de la lluvia", "mm"),
+        use_container_width=True
+    )
+
+with tab2:
+    st.plotly_chart(
+        graficar_pertenencia(humedad_fz, humedad, "Pertenencia difusa de la humedad", "%"),
+        use_container_width=True
+    )
+
+with tab3:
+    st.plotly_chart(
+        graficar_pertenencia(drenaje_fz, drenaje, "Pertenencia difusa del drenaje", "%"),
+        use_container_width=True
+    )
+
+with tab4:
+    st.plotly_chart(
+        graficar_pertenencia(pendiente_fz, pendiente, "Pertenencia difusa de la pendiente", "%"),
+        use_container_width=True
+    )
+
+
+# =====================================================
+# INTERPRETACION INTELIGENTE
+# =====================================================
+
+st.markdown('<p class="section-title">🧾 Interpretación Inteligente</p>', unsafe_allow_html=True)
+
+if riesgo_final >= 80:
     interpretacion = """
-    El sistema detecta un riesgo bajo de inundación.
-    
-    Las condiciones actuales no representan peligro significativo.
+    El sistema detecta un escenario crítico. Las condiciones ingresadas indican una alta posibilidad
+    de acumulación de agua y anegamientos. Se recomienda activar protocolos de emergencia,
+    monitorear zonas vulnerables y revisar la capacidad de drenaje.
+    """
+elif riesgo_final >= 60:
+    interpretacion = """
+    El sistema detecta un riesgo alto. Las variables muestran condiciones que podrían generar
+    problemas de escurrimiento o acumulación de agua. Se recomienda monitoreo preventivo.
+    """
+elif riesgo_final >= 40:
+    interpretacion = """
+    El sistema detecta un riesgo medio. No se observa un escenario extremo, pero existen señales
+    que requieren seguimiento, especialmente si aumenta la lluvia o baja la capacidad de drenaje.
+    """
+else:
+    interpretacion = """
+    El sistema detecta un riesgo bajo. Las condiciones actuales no representan peligro significativo,
+    aunque se recomienda mantener el monitoreo si el clima cambia.
     """
 
-st.write(interpretacion)
+st.markdown(f"""
+<div class="card">
+    <div class="card-title">Lectura del sistema</div>
+    <div style="font-size:17px; color:#334155; line-height:1.6;">
+        {interpretacion}
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-# =========================================================
-# COMPARACION ML VS DIFUSO
-# =========================================================
 
-st.subheader("⚖️ Comparación ML vs Lógica Difusa")
+# =====================================================
+# RECOMENDACIONES AUTOMATICAS
+# =====================================================
 
-col1, col2 = st.columns(2)
+st.markdown('<p class="section-title">✅ Recomendaciones Automáticas</p>', unsafe_allow_html=True)
 
-with col1:
+recomendaciones = []
 
-    st.metric(
-        "Predicción ML",
-        prediccion_texto
-    )
+if lluvia >= 80:
+    recomendaciones.append("🌧️ Monitorear lluvias intensas y acumulación de agua en zonas bajas.")
 
-with col2:
+if humedad >= 80:
+    recomendaciones.append("💧 El suelo se encuentra muy húmedo o saturado; puede reducir la absorción de agua.")
 
-    st.metric(
-        "Valor Difuso",
-        round(riesgo_final,2)
-    )
+if drenaje <= 30:
+    recomendaciones.append("🚰 Revisar desagües, canales y bocas de tormenta por posible baja capacidad de drenaje.")
 
-# =========================================================
-# RESUMEN TECNICO
-# =========================================================
+if pendiente <= 3:
+    recomendaciones.append("⛰️ La pendiente baja favorece la acumulación de agua; controlar zonas llanas.")
+
+if len(recomendaciones) == 0:
+    recomendaciones.append("🟢 No se detectan factores críticos importantes en las variables ingresadas.")
+
+for rec in recomendaciones:
+    st.write(rec)
+
+
+# =====================================================
+# CIERRE TECNICO
+# =====================================================
 
 st.markdown("---")
 
 st.success(
-    "El modelo Machine Learning aprende patrones de inundación "
-    "a partir de datos históricos simulados.\n\n"
-    "La lógica difusa interpreta escenarios graduales e inciertos.\n\n"
-    "El sistema híbrido combina predicción automática "
-    "+ razonamiento inteligente."
+    "El sistema híbrido combina la capacidad predictiva del Machine Learning "
+    "con la interpretación gradual de la lógica difusa, permitiendo una lectura "
+    "más clara, visual e interpretable del riesgo de inundación."
 )
