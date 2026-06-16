@@ -347,6 +347,123 @@ elif riesgo_final >= 40:
 else:
     st.success("🟢 RIESGO BAJO")
 
+# =====================================================
+# SEMAFORO DE RIESGO DIFUSO
+# =====================================================
+
+st.subheader("🚦 Semáforo de Riesgo Difuso")
+
+def obtener_nivel_difuso(valor):
+    if valor >= 80:
+        return "Crítico", "rojo"
+    elif valor >= 60:
+        return "Alto", "naranja"
+    elif valor >= 40:
+        return "Medio", "amarillo"
+    else:
+        return "Bajo", "verde"
+
+nivel_difuso, color_activo = obtener_nivel_difuso(riesgo_final)
+
+color_verde = "#22C55E" if color_activo == "verde" else "#D1D5DB"
+color_amarillo = "#FACC15" if color_activo == "amarillo" else "#D1D5DB"
+color_naranja = "#F97316" if color_activo == "naranja" else "#D1D5DB"
+color_rojo = "#EF4444" if color_activo == "rojo" else "#D1D5DB"
+
+st.markdown(f"""
+<div style="
+    background-color: white;
+    padding: 25px;
+    border-radius: 18px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0px 4px 14px rgba(0,0,0,0.06);
+">
+
+    <div style="display:flex; justify-content:center; gap:30px; margin-bottom:20px; flex-wrap:wrap;">
+        <div style="text-align:center;">
+            <div style="width:70px; height:70px; border-radius:50%; background:{color_verde}; margin:auto; border:2px solid #CBD5E1;"></div>
+            <p style="margin-top:8px; font-weight:600;">Bajo</p>
+        </div>
+
+        <div style="text-align:center;">
+            <div style="width:70px; height:70px; border-radius:50%; background:{color_amarillo}; margin:auto; border:2px solid #CBD5E1;"></div>
+            <p style="margin-top:8px; font-weight:600;">Medio</p>
+        </div>
+
+        <div style="text-align:center;">
+            <div style="width:70px; height:70px; border-radius:50%; background:{color_naranja}; margin:auto; border:2px solid #CBD5E1;"></div>
+            <p style="margin-top:8px; font-weight:600;">Alto</p>
+        </div>
+
+        <div style="text-align:center;">
+            <div style="width:70px; height:70px; border-radius:50%; background:{color_rojo}; margin:auto; border:2px solid #CBD5E1;"></div>
+            <p style="margin-top:8px; font-weight:600;">Crítico</p>
+        </div>
+    </div>
+
+    <h3 style="text-align:center; color:#0F172A; margin-bottom:5px;">
+        Nivel actual: {nivel_difuso}
+    </h3>
+
+    <p style="text-align:center; color:#475569; font-size:18px;">
+        Riesgo difuso calculado: <strong>{round(riesgo_final, 2)} / 100</strong>
+    </p>
+
+</div>
+""", unsafe_allow_html=True)
+
+# =====================================================
+# GRAFICO DE PERTENENCIA DEL RIESGO DIFUSO
+# =====================================================
+
+st.subheader("📉 Funciones de Pertenencia del Riesgo")
+
+fig_riesgo = go.Figure()
+
+fig_riesgo.add_trace(go.Scatter(
+    x=riesgo.universe,
+    y=riesgo["bajo"].mf,
+    mode="lines",
+    name="Bajo",
+    line=dict(color="#22C55E", width=3)
+))
+
+fig_riesgo.add_trace(go.Scatter(
+    x=riesgo.universe,
+    y=riesgo["medio"].mf,
+    mode="lines",
+    name="Medio",
+    line=dict(color="#FACC15", width=3)
+))
+
+fig_riesgo.add_trace(go.Scatter(
+    x=riesgo.universe,
+    y=riesgo["alto"].mf,
+    mode="lines",
+    name="Alto",
+    line=dict(color="#EF4444", width=3)
+))
+
+fig_riesgo.add_vline(
+    x=riesgo_final,
+    line_width=3,
+    line_dash="dash",
+    line_color="#0F172A",
+    annotation_text=f"Riesgo actual: {round(riesgo_final, 2)}",
+    annotation_position="top"
+)
+
+fig_riesgo.update_layout(
+    title="Valor del riesgo dentro de los conjuntos difusos",
+    xaxis_title="Riesgo",
+    yaxis_title="Grado de pertenencia",
+    plot_bgcolor="white",
+    paper_bgcolor="white",
+    font=dict(color="#0F172A"),
+    height=420
+)
+
+st.plotly_chart(fig_riesgo, use_container_width=True)
 
 # =====================================================
 # GRAFICO DE VARIABLES
