@@ -75,7 +75,8 @@ def obtener_clima_open_meteo(latitud, longitud):
     humedad_promedio = df_clima["relative_humidity_2m"].mean()
 
     return lluvia_24h, humedad_promedio, df_clima
-    # =====================================================
+    
+# =====================================================
 # TITULO
 # =====================================================
 
@@ -380,6 +381,7 @@ st.markdown(f"""
 ">
 
     <div style="display:flex; justify-content:center; gap:30px; margin-bottom:20px; flex-wrap:wrap;">
+
         <div style="text-align:center;">
             <div style="width:70px; height:70px; border-radius:50%; background:{color_verde}; margin:auto; border:2px solid #CBD5E1;"></div>
             <p style="margin-top:8px; font-weight:600;">Bajo</p>
@@ -399,6 +401,7 @@ st.markdown(f"""
             <div style="width:70px; height:70px; border-radius:50%; background:{color_rojo}; margin:auto; border:2px solid #CBD5E1;"></div>
             <p style="margin-top:8px; font-weight:600;">Crítico</p>
         </div>
+
     </div>
 
     <h3 style="text-align:center; color:#0F172A; margin-bottom:5px;">
@@ -411,6 +414,8 @@ st.markdown(f"""
 
 </div>
 """, unsafe_allow_html=True)
+
+
 
 # =====================================================
 # GRAFICO DE PERTENENCIA DEL RIESGO DIFUSO
