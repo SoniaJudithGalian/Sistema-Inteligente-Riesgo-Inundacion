@@ -10,7 +10,7 @@ El sistema permite seleccionar una ciudad, obtener datos climáticos automático
 
 Podés probar la aplicación interactiva desde el siguiente enlace:
 
-🔗 [Ver aplicación en Streamlit](sistema-inteligente-riesgo-inundacion-aozn2fuz2v2a9yd6bewkws)
+🔗 [Ver aplicación en Streamlit](sistema-inteligente-riesgo-inundacion-h2rre3mj2k8vtrjcbpxkwz)
 ##  Objetivo del proyecto
 
 El objetivo de este proyecto es construir un sistema inteligente capaz de estimar el riesgo de inundación combinando:
