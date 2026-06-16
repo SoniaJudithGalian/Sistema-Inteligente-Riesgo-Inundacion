@@ -32,7 +32,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.success("✅ La app inició correctamente")
+
 
 
 # =====================================================
@@ -41,7 +41,7 @@ st.success("✅ La app inició correctamente")
 
 try:
     modelo = joblib.load("modelo_ml.pkl")
-    st.success("✅ Modelo ML cargado correctamente")
+   
 except Exception as e:
     st.error("❌ Error al cargar el modelo ML")
     st.exception(e)
