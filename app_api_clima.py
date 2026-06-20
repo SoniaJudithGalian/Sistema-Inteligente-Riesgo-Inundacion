@@ -22,6 +22,34 @@ from skfuzzy import control as ctrl
 import plotly.express as px
 import plotly.graph_objects as go
 
+import requests
+import pandas as pd
+import streamlit as st
+
+
+
+def obtener_evento_historico_neuquen_2014():
+    url = "https://archive-api.open-meteo.com/v1/archive"
+
+    params = {
+        "latitude": -38.9516,
+        "longitude": -68.0591,
+        "start_date": "2014-04-02",
+        "end_date": "2014-04-08",
+        "daily": "precipitation_sum,temperature_2m_max,temperature_2m_min,wind_speed_10m_max",
+        "timezone": "America/Argentina/Buenos_Aires"
+    }
+
+    respuesta = requests.get(url, params=params)
+    datos = respuesta.json()
+
+    df = pd.DataFrame(datos["daily"])
+
+    lluvia_acumulada = df["precipitation_sum"].sum()
+
+    return lluvia_acumulada, df
+
+
 
 # =====================================================
 # CONFIGURACION
@@ -167,6 +195,31 @@ else:
     humedad = st.sidebar.slider("💧 Humedad manual (%)", 0, 100, 50)
     df_clima = None
 
+
+st.subheader("📌 Validación con evento histórico real")
+
+probar_evento = st.checkbox("Probar inundación histórica de Neuquén Capital - Abril 2014")
+
+if probar_evento:
+    lluvia, datos_historicos = obtener_evento_historico_neuquen_2014()
+
+    humedad = 90
+    drenaje = 30
+    pendiente = 2
+
+    st.write("Lluvia acumulada del evento:", round(lluvia, 2), "mm")
+    st.write("Humedad estimada:", humedad, "%")
+    st.write("Drenaje estimado:", drenaje, "%")
+    st.write("Pendiente estimada:", pendiente, "%")
+
+    st.dataframe(datos_historicos)
+
+    # Acá usás esas variables en tu modelo
+    datos_modelo = [[lluvia, humedad, drenaje, pendiente]]
+
+    prediccion = modelo.predict(datos_modelo)
+
+    st.success(f"Riesgo estimado por el sistema: {prediccion[0]}")
 
 # =====================================================
 # VARIABLES TERRITORIALES
