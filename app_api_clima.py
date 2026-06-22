@@ -218,10 +218,52 @@ col_mapa, col_semaforo = st.columns([1.5, 1])
 
 with col_mapa:
     def color_mapa(nivel):
-        if nivel == "Bajo": return [34, 197, 94, 200]
-        elif nivel == "Medio": return [250, 204, 21, 200]
-        elif nivel == "Alto": return [249, 115, 22, 200]
-        else: return [239, 68, 68, 200]
+        if nivel == "Bajo": return [34, 197, 94, 255]     # Verde brillante
+        elif nivel == "Medio": return [250, 204, 21, 255] # Amarillo
+        elif nivel == "Alto": return [249, 115, 22, 255]  # Naranja
+        else: return [239, 68, 68, 255]                   # Rojo brillante
+
+    df_mapa = pd.DataFrame({
+        "lat": [latitud], 
+        "lon": [longitud], 
+        "color": [color_mapa(nivel_difuso)], 
+        # Aumentamos el multiplicador para que la columna sea mucho más alta
+        "altura": [max(2500, riesgo_final * 150)] 
+    })
+
+    # Aumentamos la inclinación (pitch=60) para apreciar mejor el 3D
+    vista = pdk.ViewState(latitude=latitud, longitude=longitud, zoom=10, pitch=60, bearing=15)
+    
+    capa_riesgo = pdk.Layer(
+        "ColumnLayer", 
+        data=df_mapa, 
+        get_position="[lon, lat]", 
+        get_elevation="altura",
+        get_fill_color="color", 
+        radius=4000, # ¡Aumentamos el radio al triple para que el cilindro sea grueso y visible!
+        elevation_scale=50, 
+        pickable=True, 
+        extruded=True,
+    )
+
+    st.pydeck_chart(pdk.Deck(
+        # Usamos el modo oscuro nativo de pydeck (100% estable, no requiere APIs externas)
+        map_style="dark", 
+        initial_view_state=vista, 
+        layers=[capa_riesgo],
+        tooltip={
+            "html": f"<div style='font-family: Inter, sans-serif; padding: 5px;'>"
+                    f"<b style='font-size: 16px; color: #0F766E;'>{ciudad}</b><br/>"
+                    f"<hr style='margin: 5px 0; opacity: 0.2;'/>"
+                    f"Nivel de Alerta: <b>{nivel_difuso}</b></div>",
+            "style": {
+                "backgroundColor": "#FFFFFF",
+                "color": "#0F172A",
+                "borderRadius": "8px",
+                "border": "1px solid #E2E8F0"
+            }
+        }
+    ), use_container_width=True)
 
     df_mapa = pd.DataFrame({
         "lat": [latitud], "lon": [longitud], 
