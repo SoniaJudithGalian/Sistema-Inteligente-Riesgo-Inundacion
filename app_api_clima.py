@@ -134,7 +134,6 @@ def obtener_clima_open_meteo(latitud, longitud):
     return lluvia_24h, humedad_promedio, df_clima
     
  @st.cache_data(ttl=3600)
-    
  def buscar_ciudad_argentina(nombre_ciudad):
     url = "https://geocoding-api.open-meteo.com/v1/search"
 
