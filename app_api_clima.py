@@ -45,7 +45,50 @@ st.set_page_config(
     page_title="Riesgo de Inundaciones",
     layout="wide"
 )
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
 
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif;
+}
+
+.main-title {
+    font-size: 46px;
+    font-weight: 800;
+    color: #0F172A;
+    margin-bottom: 0px;
+}
+
+.subtitle {
+    font-size: 18px;
+    color: #475569;
+    margin-bottom: 25px;
+}
+
+.section-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #0F766E;
+    margin-top: 25px;
+    margin-bottom: 10px;
+}
+
+.card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: 0px 4px 18px rgba(15, 23, 42, 0.08);
+}
+
+.risk-text {
+    font-size: 32px;
+    font-weight: 800;
+    color: #DC2626;
+}
+</style>
+""", unsafe_allow_html=True)
 
 
 
@@ -89,143 +132,226 @@ def obtener_clima_open_meteo(latitud, longitud):
     humedad_promedio = df_clima["relative_humidity_2m"].mean()
 
     return lluvia_24h, humedad_promedio, df_clima
+    @st.cache_data(ttl=3600)
+    
+def buscar_ciudad_argentina(nombre_ciudad):
+    url = "https://geocoding-api.open-meteo.com/v1/search"
+
+    params = {
+        "name": nombre_ciudad,
+        "count": 5,
+        "language": "es",
+        "format": "json",
+        "countryCode": "AR"
+    }
+
+    try:
+        respuesta = requests.get(url, params=params, timeout=10)
+
+        if respuesta.status_code != 200:
+            return []
+
+        datos = respuesta.json()
+        return datos.get("results", [])
+
+    except Exception:
+        return []
+
+def obtener_evento_historico_bahia_blanca():
+    resultados = buscar_ciudad_argentina("Bahía Blanca")
+
+    if len(resultados) > 0:
+        lugar = resultados[0]
+        latitud = lugar.get("latitude")
+        longitud = lugar.get("longitude")
+        provincia = lugar.get("admin1", "Buenos Aires")
+    else:
+        latitud = -38.7196
+        longitud = -62.2724
+        provincia = "Buenos Aires"
+
+    df_evento = pd.DataFrame({
+        "fecha": ["07/03/2025"],
+        "ciudad": ["Bahía Blanca"],
+        "lluvia_mm": [290],
+        "humedad_estimada": [95],
+        "drenaje_estimado": [30],
+        "pendiente_estimada": [2],
+        "fuente": ["Argentina.gob.ar / IGN"]
+    })
+
+    return {
+        "ciudad": "Bahía Blanca",
+        "provincia": provincia,
+        "latitud": latitud,
+        "longitud": longitud,
+        "lluvia": 290,
+        "humedad": 95,
+        "drenaje": 30,
+        "pendiente": 2,
+        "df_evento": df_evento
+    }
     
 # =====================================================
-# TITULO
+# TITULO MODERNO
 # =====================================================
 
-st.title("🌊 Sistema Inteligente de Riesgo de Inundaciones")
-
-st.markdown("""
-Sistema híbrido basado en:
-
-- Machine Learning
-- Lógica Difusa
-- API climática Open-Meteo
-""")
-
-
-# =====================================================
-# SIDEBAR - UBICACION
-# =====================================================
-
-st.sidebar.header("🌎 Ubicación")
-
-ciudad = st.sidebar.selectbox(
-    "Seleccionar ciudad",
-    [
-        "Neuquén Capital",
-        "Añelo",
-        "Rincón de los Sauces",
-        "Centenario",
-        "Plottier",
-        "Cutral Có"
-    ]
+st.markdown(
+    '<div class="main-title">🌊 Sistema Inteligente de Riesgo de Inundaciones</div>',
+    unsafe_allow_html=True
 )
 
-coordenadas = {
-    "Neuquén Capital": (-38.9516, -68.0591),
-    "Añelo": (-38.3544, -68.7884),
-    "Rincón de los Sauces": (-37.3906, -68.9250),
-    "Centenario": (-38.8296, -68.1318),
-    "Plottier": (-38.9667, -68.2333),
-    "Cutral Có": (-38.9369, -69.2305)
-}
-
-latitud, longitud = coordenadas[ciudad]
-
-
-# =====================================================
-# DATOS CLIMATICOS
-# =====================================================
-
-st.sidebar.header("🌦️ Datos climáticos")
-
-usar_api = st.sidebar.checkbox(
-    "Usar datos climáticos automáticos",
-    value=True
+st.markdown(
+    '<div class="subtitle">Aplicación con Machine Learning, Lógica Difusa y datos climáticos de Open-Meteo.</div>',
+    unsafe_allow_html=True
 )
 
-if usar_api:
-    try:
-        lluvia_api, humedad_api, df_clima = obtener_clima_open_meteo(
-            latitud,
-            longitud
-        )
+# =====================================================
+# SIDEBAR - MONITOREO
+# =====================================================
 
-        lluvia = round(float(lluvia_api), 2)
-        humedad = round(float(humedad_api), 2)
+st.sidebar.markdown("## 🗺️ Monitoreo territorial")
 
-        st.sidebar.success("Datos climáticos cargados")
+ciudades = [
+    "Neuquén Capital",
+    "Añelo",
+    "Rincón de los Sauces",
+    "Centenario",
+    "Plottier",
+    "Cutral Có",
+    "Bahía Blanca",
+    "Córdoba",
+    "Buenos Aires",
+    "Salta",
+    "Mendoza",
+    "Rosario"
+]
 
-        st.sidebar.metric(
-            "🌧️ Lluvia estimada 24h",
-            f"{lluvia} mm"
-        )
+ciudad_select = st.sidebar.selectbox(
+    "Elegí una ciudad",
+    ciudades
+)
 
-        st.sidebar.metric(
-            "💧 Humedad promedio 24h",
-            f"{humedad} %"
-        )
+ciudad_manual = st.sidebar.text_input(
+    "O escribí otra ciudad argentina",
+    placeholder="Ejemplo: Cipolletti"
+)
 
-    except Exception as e:
-        st.sidebar.error("No se pudieron cargar los datos climáticos")
-        st.sidebar.info("Se usarán valores manuales")
+if "modo_bahia" not in st.session_state:
+    st.session_state.modo_bahia = False
 
-        lluvia = st.sidebar.slider("🌧️ Lluvia manual (mm)", 0, 120, 50)
+st.sidebar.markdown("---")
+
+if st.sidebar.button("🌧️ Mostrar caso real: Bahía Blanca"):
+    st.session_state.modo_bahia = True
+
+if st.sidebar.button("🌤️ Volver a clima actual"):
+    st.session_state.modo_bahia = False
+
+# =====================================================
+# DATOS SEGÚN MODO
+# =====================================================
+
+df_clima = None
+df_evento_bahia = None
+
+if st.session_state.modo_bahia:
+
+    evento = obtener_evento_historico_bahia_blanca()
+
+    ciudad = evento["ciudad"]
+    provincia = evento["provincia"]
+    latitud = evento["latitud"]
+    longitud = evento["longitud"]
+
+    lluvia = evento["lluvia"]
+    humedad = evento["humedad"]
+    drenaje = evento["drenaje"]
+    pendiente = evento["pendiente"]
+
+    df_evento_bahia = evento["df_evento"]
+
+    st.sidebar.info("Caso histórico cargado: Bahía Blanca 2025")
+
+else:
+
+    ciudad_a_buscar = ciudad_manual if ciudad_manual.strip() != "" else ciudad_select
+
+    resultados = buscar_ciudad_argentina(ciudad_a_buscar)
+
+    if len(resultados) == 0:
+        st.error("No se encontró la ciudad. Probá escribir el nombre de otra forma.")
+        st.stop()
+
+    lugar = resultados[0]
+
+    ciudad = lugar.get("name", ciudad_a_buscar)
+    provincia = lugar.get("admin1", "")
+    latitud = lugar.get("latitude")
+    longitud = lugar.get("longitude")
+
+    st.sidebar.header("🌦️ Datos climáticos")
+
+    usar_api = st.sidebar.checkbox(
+        "Usar datos climáticos automáticos",
+        value=True
+    )
+
+    if usar_api:
+        try:
+            lluvia_api, humedad_api, df_clima = obtener_clima_open_meteo(
+                latitud,
+                longitud
+            )
+
+            lluvia = round(float(lluvia_api), 2)
+            humedad = round(float(humedad_api), 2)
+
+            st.sidebar.success("Datos climáticos cargados")
+
+            st.sidebar.metric("🌧️ Lluvia estimada 24h", f"{lluvia} mm")
+            st.sidebar.metric("💧 Humedad promedio 24h", f"{humedad} %")
+
+        except Exception as e:
+            st.sidebar.error("No se pudieron cargar los datos climáticos")
+            lluvia = st.sidebar.slider("🌧️ Lluvia manual (mm)", 0, 300, 50)
+            humedad = st.sidebar.slider("💧 Humedad manual (%)", 0, 100, 50)
+            df_clima = None
+
+    else:
+        lluvia = st.sidebar.slider("🌧️ Lluvia manual (mm)", 0, 300, 50)
         humedad = st.sidebar.slider("💧 Humedad manual (%)", 0, 100, 50)
         df_clima = None
 
-else:
-    lluvia = st.sidebar.slider("🌧️ Lluvia manual (mm)", 0, 120, 50)
-    humedad = st.sidebar.slider("💧 Humedad manual (%)", 0, 100, 50)
-    df_clima = None
+    st.sidebar.header("🏙️ Variables territoriales")
 
+    drenaje = st.sidebar.slider(
+        "🚰 Capacidad de drenaje (%)",
+        0,
+        100,
+        50
+    )
 
-st.subheader("📌 Validación con evento histórico real")
-
-probar_evento = st.checkbox("Probar inundación histórica de Neuquén Capital - Abril 2014")
-
-if probar_evento:
-    lluvia, datos_historicos = obtener_evento_historico_neuquen_2014()
-
-    humedad = 90
-    drenaje = 30
-    pendiente = 2
-
-    st.write("Lluvia acumulada del evento:", round(lluvia, 2), "mm")
-    st.write("Humedad estimada:", humedad, "%")
-    st.write("Drenaje estimado:", drenaje, "%")
-    st.write("Pendiente estimada:", pendiente, "%")
-
-    st.dataframe(datos_historicos)
-
-    # Acá usás esas variables en tu modelo
-    datos_modelo = [[lluvia, humedad, drenaje, pendiente]]
-
-    prediccion = modelo.predict(datos_modelo)
-
-    st.success(f"Riesgo estimado por el sistema: {prediccion[0]}")
+    pendiente = st.sidebar.slider(
+        "⛰️ Pendiente topográfica (%)",
+        0,
+        10,
+        5
+    )
 
 # =====================================================
-# VARIABLES TERRITORIALES
+# MOSTRAR DATOS DEL CASO BAHÍA BLANCA
 # =====================================================
 
-st.sidebar.header("🏙️ Variables territoriales")
+if st.session_state.modo_bahia:
+    st.markdown('<div class="section-title">📌 Caso real: Bahía Blanca</div>', unsafe_allow_html=True)
 
-drenaje = st.sidebar.slider(
-    "🚰 Capacidad de drenaje (%)",
-    0,
-    100,
-    50
-)
+    st.warning(
+        "Se cargó el evento histórico de Bahía Blanca del 07/03/2025, "
+        "con aproximadamente 290 mm de lluvia en 12 horas."
+    )
 
-pendiente = st.sidebar.slider(
-    "⛰️ Pendiente topográfica (%)",
-    0,
-    10,
-    5
-)
+    st.dataframe(df_evento_bahia, use_container_width=True)
 
 
 # =====================================================
@@ -359,41 +485,6 @@ simulador.compute()
 
 riesgo_final = simulador.output.get("riesgo", 0)
 
-
-# =====================================================
-# RESULTADOS
-# =====================================================
-
-st.subheader("📊 Resultados del sistema")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.metric("Predicción ML", prediccion_texto)
-
-with col2:
-    st.metric("Riesgo Difuso", round(riesgo_final, 2))
-
-with col3:
-    st.metric("Ciudad", ciudad)
-
-
-if riesgo_final >= 80:
-    st.error("🚨 RIESGO CRÍTICO DE INUNDACIÓN")
-elif riesgo_final >= 60:
-    st.warning("⚠️ RIESGO ALTO")
-elif riesgo_final >= 40:
-    st.info("🟡 RIESGO MEDIO")
-else:
-    st.success("🟢 RIESGO BAJO")
-
-
-# =====================================================
-# SEMAFORO DE RIESGO DIFUSO CON PLOTLY
-# =====================================================
-
-st.subheader("🚦 Semáforo de Riesgo Difuso")
-
 def obtener_nivel_difuso(valor):
     if valor >= 80:
         return "Crítico", "#EF4444"
@@ -404,77 +495,178 @@ def obtener_nivel_difuso(valor):
     else:
         return "Bajo", "#22C55E"
 
+
 nivel_difuso, color_activo = obtener_nivel_difuso(riesgo_final)
 
-# Colores apagados
-gris = "#D1D5DB"
+# =====================================================
+# RESULTADOS
+# =====================================================
 
-color_bajo = "#22C55E" if nivel_difuso == "Bajo" else gris
-color_medio = "#FACC15" if nivel_difuso == "Medio" else gris
-color_alto = "#F97316" if nivel_difuso == "Alto" else gris
-color_critico = "#EF4444" if nivel_difuso == "Crítico" else gris
+st.markdown('<div class="section-title">📊 Resultados del sistema</div>', unsafe_allow_html=True)
 
-fig_semaforo = go.Figure()
+col1, col2, col3, col4 = st.columns(4)
 
-# Círculos del semáforo
-fig_semaforo.add_shape(
-    type="circle",
-    x0=0.05, y0=0.25,
-    x1=0.25, y1=0.75,
-    fillcolor=color_bajo,
-    line=dict(color="#CBD5E1", width=2)
+with col1:
+    st.metric("Ciudad", ciudad)
+
+with col2:
+    st.metric("Lluvia", f"{round(lluvia, 2)} mm")
+
+with col3:
+    st.metric("Predicción ML", prediccion_texto)
+
+with col4:
+    st.metric("Lógica Difusa", f"{nivel_difuso} - {round(riesgo_final, 2)}")
+
+if riesgo_final >= 80:
+    st.error("🚨 RIESGO CRÍTICO DE INUNDACIÓN")
+elif riesgo_final >= 60:
+    st.warning("⚠️ RIESGO ALTO")
+elif riesgo_final >= 40:
+    st.info("🟡 RIESGO MEDIO")
+else:
+    st.success("🟢 RIESGO BAJO")
+# =====================================================
+# MAPA TERRITORIAL
+# =====================================================
+
+st.subheader("🗺️ Visualización territorial")
+
+def color_mapa_por_riesgo(nivel):
+    nivel = str(nivel).lower()
+
+    if "bajo" in nivel:
+        return [34, 197, 94, 180]
+    elif "medio" in nivel:
+        return [250, 204, 21, 180]
+    elif "alto" in nivel:
+        return [249, 115, 22, 180]
+    else:
+        return [239, 68, 68, 180]
+
+
+df_mapa = pd.DataFrame({
+    "ciudad": [ciudad],
+    "provincia": [provincia],
+    "lat": [latitud],
+    "lon": [longitud],
+    "lluvia": [lluvia],
+    "riesgo_ml": [prediccion_texto],
+    "riesgo_difuso": [nivel_difuso],
+    "color": [color_mapa_por_riesgo(nivel_difuso)]
+})
+
+st.pydeck_chart(
+    pdk.Deck(
+        map_style="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+        initial_view_state=pdk.ViewState(
+            latitude=-38.4161,
+            longitude=-63.6167,
+            zoom=3.2,
+            pitch=0
+        ),
+        layers=[
+            pdk.Layer(
+                "ScatterplotLayer",
+                data=df_mapa,
+                get_position="[lon, lat]",
+                get_radius=65000,
+                get_fill_color="color",
+                pickable=True
+            )
+        ],
+        tooltip={
+            "html": """
+            <b>{ciudad}, {provincia}</b><br/>
+            Lluvia: {lluvia} mm<br/>
+            Riesgo ML: {riesgo_ml}<br/>
+            Riesgo Difuso: {riesgo_difuso}
+            """,
+            "style": {
+                "backgroundColor": "white",
+                "color": "black"
+            }
+        }
+    )
 )
 
-fig_semaforo.add_shape(
-    type="circle",
-    x0=0.30, y0=0.25,
-    x1=0.50, y1=0.75,
-    fillcolor=color_medio,
-    line=dict(color="#CBD5E1", width=2)
-)
 
-fig_semaforo.add_shape(
-    type="circle",
-    x0=0.55, y0=0.25,
-    x1=0.75, y1=0.75,
-    fillcolor=color_alto,
-    line=dict(color="#CBD5E1", width=2)
-)
+# =====================================================
+# SEMAFORO CIRCULAR DE RIESGO DIFUSO
+# =====================================================
 
-fig_semaforo.add_shape(
-    type="circle",
-    x0=0.80, y0=0.25,
-    x1=1.00, y1=0.75,
-    fillcolor=color_critico,
-    line=dict(color="#CBD5E1", width=2)
-)
+st.subheader("🚦 Semáforo circular de Riesgo Difuso")
 
-# Textos debajo
-fig_semaforo.add_annotation(x=0.15, y=0.08, text="Bajo", showarrow=False, font=dict(size=16))
-fig_semaforo.add_annotation(x=0.40, y=0.08, text="Medio", showarrow=False, font=dict(size=16))
-fig_semaforo.add_annotation(x=0.65, y=0.08, text="Alto", showarrow=False, font=dict(size=16))
-fig_semaforo.add_annotation(x=0.90, y=0.08, text="Crítico", showarrow=False, font=dict(size=16))
+def crear_semaforo_circular_difuso(valor, nivel):
+    fig = go.Figure()
 
-# Texto principal
-fig_semaforo.add_annotation(
-    x=0.5,
-    y=1.05,
-    text=f"Nivel actual: {nivel_difuso} | Riesgo difuso: {round(riesgo_final, 2)} / 100",
-    showarrow=False,
-    font=dict(size=20, color="#0F172A")
-)
+    segmentos = [
+        (0, 35, "#22C55E", "Bajo"),
+        (25, 60, "#FACC15", "Medio"),
+        (50, 85, "#F97316", "Alto"),
+        (75, 100, "#EF4444", "Crítico")
+    ]
 
-fig_semaforo.update_layout(
-    height=300,
-    xaxis=dict(visible=False, range=[0, 1.05]),
-    yaxis=dict(visible=False, range=[0, 1.15]),
-    plot_bgcolor="white",
-    paper_bgcolor="white",
-    margin=dict(l=20, r=20, t=60, b=20)
-)
+    for inicio, fin, color, nombre in segmentos:
+        theta = np.linspace(inicio * 3.6, fin * 3.6, 80)
+        r = np.ones_like(theta)
+
+        fig.add_trace(go.Scatterpolar(
+            r=r,
+            theta=theta,
+            mode="lines",
+            line=dict(color=color, width=32),
+            opacity=0.72,
+            name=nombre
+        ))
+
+    theta_valor = valor * 3.6
+
+    fig.add_trace(go.Scatterpolar(
+        r=[0, 0.82],
+        theta=[theta_valor, theta_valor],
+        mode="lines+markers",
+        line=dict(color="#0F172A", width=5),
+        marker=dict(size=[10, 14], color="#0F172A"),
+        name="Riesgo actual"
+    ))
+
+    fig.update_layout(
+        title=dict(
+            text=f"Nivel actual: {nivel} | Riesgo difuso: {round(valor, 2)} / 100",
+            x=0.5,
+            font=dict(size=22, color="#0F172A")
+        ),
+        polar=dict(
+            radialaxis=dict(visible=False, range=[0, 1.15]),
+            angularaxis=dict(
+                visible=False,
+                rotation=90,
+                direction="clockwise"
+            )
+        ),
+        showlegend=True,
+        height=430,
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        margin=dict(l=20, r=20, t=70, b=20),
+        annotations=[
+            dict(
+                text=f"<b>{int(valor)}</b><br>{nivel.upper()}",
+                x=0.5,
+                y=0.5,
+                showarrow=False,
+                font=dict(size=28, color="#0F172A")
+            )
+        ]
+    )
+
+    return fig
+
+
+fig_semaforo = crear_semaforo_circular_difuso(riesgo_final, nivel_difuso)
 
 st.plotly_chart(fig_semaforo, use_container_width=True)
-
 
 # =====================================================
 # GRAFICO DE PERTENENCIA DEL RIESGO DIFUSO
