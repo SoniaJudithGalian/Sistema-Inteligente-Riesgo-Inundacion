@@ -218,6 +218,7 @@ st.markdown('<div class="section-title">Análisis Territorial</div>', unsafe_all
 
 col_mapa, col_semaforo = st.columns([1.5, 1])
 
+
 with col_mapa:
     def color_mapa_hex(nivel):
         if nivel == "Bajo": return "#22C55E"
@@ -242,24 +243,30 @@ with col_mapa:
         showlegend=False
     ))
 
-    # CAPA 2: El punto central exacto de la CIUDAD (Núcleo urbano)
+    # CAPA 2: El punto central exacto de la CIUDAD (Blanco para resaltar en satélite)
     fig_mapa.add_trace(go.Scattermapbox(
         lat=[latitud],
         lon=[longitud],
         mode='markers',
         marker=dict(
             size=10, 
-            color='#0F172A',
+            color='#FFFFFF', 
             opacity=1.0
         ),
         hoverinfo='skip',
         showlegend=False
     ))
 
-    # Configuración del mapa base estable
+    # Configuración del mapa base SATELITAL (ArcGIS)
     fig_mapa.update_layout(
         mapbox=dict(
-            style="carto-positron", 
+            style="white-bg", 
+            layers=[
+                dict(
+                    sourcetype="raster",
+                    source=["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"]
+                )
+            ],
             center=dict(lat=latitud, lon=longitud),
             zoom=11.5
         ),
