@@ -45,9 +45,16 @@ st.set_page_config(
     page_title="Riesgo de Inundaciones",
     layout="wide"
 )
+
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght=400;600;700;800&display=swap');
+
+/* RE DUCE EL ESPACIO EN BLANCO SUPERIOR E INFERIOR DE LA APP */
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
 
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif;
@@ -505,25 +512,24 @@ def obtener_nivel_difuso(valor):
 nivel_difuso, color_activo = obtener_nivel_difuso(riesgo_final)
 
 # =====================================================
-# RESULTADOS
+# RESULTADOS (KPIs)
 # =====================================================
+st.markdown('<div class="section-title">📊 Resumen de Situación</div>', unsafe_allow_html=True)
 
-st.markdown('<div class="section-title">📊 Resultados del sistema</div>', unsafe_allow_html=True)
+# Usamos un contenedor nativo de Streamlit para darle un marco profesional
+with st.container(border=True):
+    col1, col2, col3, col4 = st.columns(4)
 
-col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("📍 Ciudad", ciudad)
+    with col2:
+        st.metric("🌧️ Lluvia", f"{round(lluvia, 2)} mm")
+    with col3:
+        st.metric("🤖 Predicción ML", prediccion_texto)
+    with col4:
+        st.metric("🧠 Lógica Difusa", f"{nivel_difuso} ({round(riesgo_final, 1)})")
 
-with col1:
-    st.metric("Ciudad", ciudad)
-
-with col2:
-    st.metric("Lluvia", f"{round(lluvia, 2)} mm")
-
-with col3:
-    st.metric("Predicción ML", prediccion_texto)
-
-with col4:
-    st.metric("Lógica Difusa", f"{nivel_difuso} - {round(riesgo_final, 2)}")
-
+# Mantenemos las alertas, pero sin tanto espacio
 if riesgo_final >= 80:
     st.error("🚨 RIESGO CRÍTICO DE INUNDACIÓN")
 elif riesgo_final >= 60:
@@ -532,232 +538,114 @@ elif riesgo_final >= 40:
     st.info("🟡 RIESGO MEDIO")
 else:
     st.success("🟢 RIESGO BAJO")
+
+
+
 # =====================================================
-# MAPA TERRITORIAL
+# MAPA TERRITORIAL 3D Y SEMÁFORO (LADO A LADO)
 # =====================================================
+st.markdown('<div class="section-title"> Análisis Territorial y Nivel de Riesgo</div>', unsafe_allow_html=True)
 
-st.subheader("🗺️ Visualización territorial")
+# Creamos las columnas: el mapa ocupa más espacio (1.5) que el semáforo (1)
+col_mapa, col_semaforo = st.columns([1.5, 1])
 
-def color_mapa_por_riesgo(nivel):
-    nivel = str(nivel).lower()
+# ----------------- COLUMNA IZQUIERDA: EL MAPA 3D -----------------
+with col_mapa:
+    
+    def elevacion_por_riesgo(riesgo_num):
+        return max(1000, riesgo_num * 50) 
+        
+    df_mapa = pd.DataFrame({
+        "ciudad": [ciudad],
+        "provincia": [provincia],
+        "lat": [latitud],
+        "lon": [longitud],
+        "lluvia": [lluvia],
+        "riesgo_ml": [prediccion_texto],
+        "riesgo_difuso": [nivel_difuso],
+        "color": [color_mapa_por_riesgo(nivel_difuso)],
+        "altura_cilindro": [elevacion_por_riesgo(riesgo_final)]
+    })
 
-    if "bajo" in nivel:
-        return [34, 197, 94, 180]
-    elif "medio" in nivel:
-        return [250, 204, 21, 180]
-    elif "alto" in nivel:
-        return [249, 115, 22, 180]
+    capa_terreno = pdk.Layer(
+        "TerrainLayer",
+        elevation_decoder={"rScaler": 256, "gScaler": 1, "bScaler": 1 / 256, "offset": -32768},
+        texture="https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        elevation_data="https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+    )
+
+    capa_riesgo = pdk.Layer(
+        "ColumnLayer",
+        data=df_mapa,
+        get_position="[lon, lat]",
+        get_elevation="altura_cilindro",
+        get_fill_color="color",
+        radius=2000,
+        elevation_scale=50,
+        pickable=True,
+        extruded=True,
+    )
+
+    vista_inicial = pdk.ViewState(
+        latitude=latitud,
+        longitude=longitud,
+        zoom=10.5,
+        pitch=65,
+        bearing=15
+    )
+
+    st.pydeck_chart(
+        pdk.Deck(
+            map_style=None,
+            initial_view_state=vista_inicial,
+            layers=[capa_terreno, capa_riesgo],
+            tooltip={"html": "<b>{ciudad}</b><br/>Riesgo: {riesgo_difuso}"} # Tooltip simplificado para el ejemplo
+        ),
+        use_container_width=True
+    )
+
+# ----------------- COLUMNA DERECHA: EL SEMÁFORO -----------------
+with col_semaforo:
+    
+    # Llamás a la función original que ya tenías escrita en tu código
+    fig_semaforo = crear_semaforo_circular_difuso(riesgo_final, nivel_difuso)
+    
+    # Le ajustamos los márgenes para que no quede con tanto espacio blanco
+    fig_semaforo.update_layout(margin=dict(l=10, r=10, t=40, b=10), height=380)
+    
+    st.plotly_chart(fig_semaforo, use_container_width=True)
+
+# =====================================================
+# GRÁFICOS SECUNDARIOS (DOS COLUMNAS)
+# =====================================================
+st.markdown('<div class="section-title">📈 Desglose de Datos y Pronóstico</div>', unsafe_allow_html=True)
+
+col_graficos_izq, col_graficos_der = st.columns(2)
+
+with col_graficos_izq:
+    st.markdown("**Funciones de Pertenencia del Riesgo**")
+    # (Pegá acá tu código de fig_riesgo)
+    fig_riesgo.update_layout(margin=dict(l=10, r=10, t=30, b=10), height=300)
+    st.plotly_chart(fig_riesgo, use_container_width=True)
+
+    st.markdown("**Variables Utilizadas**")
+    # (Pegá acá tu código de px.bar para df_inputs)
+    fig.update_layout(margin=dict(l=10, r=10, t=30, b=10), height=250)
+    st.plotly_chart(fig, use_container_width=True)
+
+with col_graficos_der:
+    if df_clima is not None:
+        st.markdown(f"**🌦️ Pronóstico para {ciudad}**")
+        
+        # Gráfico de Lluvia
+        fig_lluvia.update_layout(margin=dict(l=10, r=10, t=30, b=10), height=250)
+        st.plotly_chart(fig_lluvia, use_container_width=True)
+        
+        # Gráfico de Humedad
+        fig_humedad.update_layout(margin=dict(l=10, r=10, t=30, b=10), height=250)
+        st.plotly_chart(fig_humedad, use_container_width=True)
     else:
-        return [239, 68, 68, 180]
-
-
-df_mapa = pd.DataFrame({
-    "ciudad": [ciudad],
-    "provincia": [provincia],
-    "lat": [latitud],
-    "lon": [longitud],
-    "lluvia": [lluvia],
-    "riesgo_ml": [prediccion_texto],
-    "riesgo_difuso": [nivel_difuso],
-    "color": [color_mapa_por_riesgo(nivel_difuso)]
-})
-
-st.pydeck_chart(
-    pdk.Deck(
-        map_style="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
-        initial_view_state=pdk.ViewState(
-            latitude=-38.4161,
-            longitude=-63.6167,
-            zoom=3.2,
-            pitch=0
-        ),
-        layers=[
-            pdk.Layer(
-                "ScatterplotLayer",
-                data=df_mapa,
-                get_position="[lon, lat]",
-                get_radius=65000,
-                get_fill_color="color",
-                pickable=True
-            )
-        ],
-        tooltip={
-            "html": """
-            <b>{ciudad}, {provincia}</b><br/>
-            Lluvia: {lluvia} mm<br/>
-            Riesgo ML: {riesgo_ml}<br/>
-            Riesgo Difuso: {riesgo_difuso}
-            """,
-            "style": {
-                "backgroundColor": "white",
-                "color": "black"
-            }
-        }
-    )
-)
-
-
-# =====================================================
-# SEMAFORO CIRCULAR DE RIESGO DIFUSO
-# =====================================================
-
-st.subheader("🚦 Semáforo circular de Riesgo Difuso")
-
-def crear_semaforo_circular_difuso(valor, nivel):
-    fig = go.Figure()
-
-    segmentos = [
-        (0, 35, "#22C55E", "Bajo"),
-        (25, 60, "#FACC15", "Medio"),
-        (50, 85, "#F97316", "Alto"),
-        (75, 100, "#EF4444", "Crítico")
-    ]
-
-    for inicio, fin, color, nombre in segmentos:
-        theta = np.linspace(inicio * 3.6, fin * 3.6, 80)
-        r = np.ones_like(theta)
-
-        fig.add_trace(go.Scatterpolar(
-            r=r,
-            theta=theta,
-            mode="lines",
-            line=dict(color=color, width=32),
-            opacity=0.72,
-            name=nombre
-        ))
-
-    theta_valor = valor * 3.6
-
-    fig.add_trace(go.Scatterpolar(
-        r=[0, 0.82],
-        theta=[theta_valor, theta_valor],
-        mode="lines+markers",
-        line=dict(color="#0F172A", width=5),
-        marker=dict(size=[10, 14], color="#0F172A"),
-        name="Riesgo actual"
-    ))
-
-    fig.update_layout(
-        title=dict(
-            text=f"Nivel actual: {nivel} | Riesgo difuso: {round(valor, 2)} / 100",
-            x=0.5,
-            font=dict(size=22, color="#0F172A")
-        ),
-        polar=dict(
-            radialaxis=dict(visible=False, range=[0, 1.15]),
-            angularaxis=dict(
-                visible=False,
-                rotation=90,
-                direction="clockwise"
-            )
-        ),
-        showlegend=True,
-        height=430,
-        paper_bgcolor="white",
-        plot_bgcolor="white",
-        margin=dict(l=20, r=20, t=70, b=20),
-        annotations=[
-            dict(
-                text=f"<b>{int(valor)}</b><br>{nivel.upper()}",
-                x=0.5,
-                y=0.5,
-                showarrow=False,
-                font=dict(size=28, color="#0F172A")
-            )
-        ]
-    )
-
-    return fig
-
-
-fig_semaforo = crear_semaforo_circular_difuso(riesgo_final, nivel_difuso)
-
-st.plotly_chart(fig_semaforo, use_container_width=True)
-
-# =====================================================
-# GRAFICO DE PERTENENCIA DEL RIESGO DIFUSO
-# =====================================================
-
-st.subheader("📉 Funciones de Pertenencia del Riesgo")
-
-fig_riesgo = go.Figure()
-
-fig_riesgo.add_trace(go.Scatter(
-    x=riesgo.universe,
-    y=riesgo["bajo"].mf,
-    mode="lines",
-    name="Bajo",
-    line=dict(color="#22C55E", width=3)
-))
-
-fig_riesgo.add_trace(go.Scatter(
-    x=riesgo.universe,
-    y=riesgo["medio"].mf,
-    mode="lines",
-    name="Medio",
-    line=dict(color="#FACC15", width=3)
-))
-
-fig_riesgo.add_trace(go.Scatter(
-    x=riesgo.universe,
-    y=riesgo["alto"].mf,
-    mode="lines",
-    name="Alto",
-    line=dict(color="#EF4444", width=3)
-))
-
-fig_riesgo.add_vline(
-    x=riesgo_final,
-    line_width=3,
-    line_dash="dash",
-    line_color="#0F172A",
-    annotation_text=f"Riesgo actual: {round(riesgo_final, 2)}",
-    annotation_position="top"
-)
-
-fig_riesgo.update_layout(
-    title="Valor del riesgo dentro de los conjuntos difusos",
-    xaxis_title="Riesgo",
-    yaxis_title="Grado de pertenencia",
-    plot_bgcolor="white",
-    paper_bgcolor="white",
-    font=dict(color="#0F172A"),
-    height=420
-)
-
-st.plotly_chart(fig_riesgo, use_container_width=True)
-
-# =====================================================
-# GRAFICO DE VARIABLES
-# =====================================================
-
-st.subheader("📥 Variables ingresadas")
-
-df_inputs = pd.DataFrame({
-    "Variable": [
-        "Lluvia",
-        "Humedad",
-        "Drenaje",
-        "Pendiente"
-    ],
-    "Valor": [
-        lluvia,
-        humedad,
-        drenaje,
-        pendiente
-    ]
-})
-
-fig = px.bar(
-    df_inputs,
-    x="Variable",
-    y="Valor",
-    text="Valor",
-    title="Valores utilizados por el sistema"
-)
-
-st.plotly_chart(fig, use_container_width=True)
-
+        st.info("Ingreso de datos manual activado. No hay pronóstico horario disponible.")
 
 # =====================================================
 # GRAFICO CLIMATICO API
