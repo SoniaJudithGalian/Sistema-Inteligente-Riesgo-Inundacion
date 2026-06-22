@@ -197,7 +197,7 @@ def obtener_evento_historico_bahia_blanca():
 # =====================================================
 
 st.markdown(
-    '<div class="main-title">🌊 Sistema Inteligente de Riesgo de Inundaciones</div>',
+    '<div class="main-title"> Sistema Inteligente de Riesgo de Inundaciones</div>',
     unsafe_allow_html=True
 )
 
@@ -210,7 +210,7 @@ st.markdown(
 # SIDEBAR - MONITOREO
 # =====================================================
 
-st.sidebar.markdown("## 🗺️ Monitoreo territorial")
+st.sidebar.markdown("##  Monitoreo territorial")
 
 ciudades = [
     "Neuquén Capital",
@@ -242,10 +242,10 @@ if "modo_bahia" not in st.session_state:
 
 st.sidebar.markdown("---")
 
-if st.sidebar.button("🌧️ Mostrar caso real: Bahía Blanca"):
+if st.sidebar.button(" Mostrar caso real: Bahía Blanca"):
     st.session_state.modo_bahia = True
 
-if st.sidebar.button("🌤️ Volver a clima actual"):
+if st.sidebar.button(" Volver a clima actual"):
     st.session_state.modo_bahia = False
 
 # =====================================================
@@ -277,7 +277,7 @@ else:
 
     ciudad_a_buscar = ciudad_manual if ciudad_manual.strip() != "" else ciudad_select
 
-    resultados = buscar_ciudad_argentina(ciudad_a_buscar)
+resultados = buscar_ciudad_argentina(ciudad_a_buscar)
 
     if len(resultados) == 0:
         st.error("No se encontró la ciudad. Probá escribir el nombre de otra forma.")
