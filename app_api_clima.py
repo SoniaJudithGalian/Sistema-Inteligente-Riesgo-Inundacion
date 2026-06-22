@@ -14,29 +14,6 @@ import pydeck as pdk
 
 
 
-def obtener_evento_historico_neuquen_2014():
-    url = "https://archive-api.open-meteo.com/v1/archive"
-
-    params = {
-        "latitude": -38.9516,
-        "longitude": -68.0591,
-        "start_date": "2014-04-02",
-        "end_date": "2014-04-08",
-        "daily": "precipitation_sum,temperature_2m_max,temperature_2m_min,wind_speed_10m_max",
-        "timezone": "America/Argentina/Buenos_Aires"
-    }
-
-    respuesta = requests.get(url, params=params)
-    datos = respuesta.json()
-
-    df = pd.DataFrame(datos["daily"])
-
-    lluvia_acumulada = df["precipitation_sum"].sum()
-
-    return lluvia_acumulada, df
-
-
-
 # =====================================================
 # CONFIGURACION
 # =====================================================
@@ -221,43 +198,46 @@ st.markdown(
 # SIDEBAR - MONITOREO
 # =====================================================
 
-st.sidebar.markdown("##  Monitoreo territorial")
+st.sidebar.markdown("## 🗺️ Monitoreo territorial")
 
+# Lista optimizada con casos críticos de estudio de inundaciones en Argentina
 ciudades = [
+    # Región Comahue / Localidades del Alto Valle y alrededores
     "Neuquén Capital",
+    "Plottier",
+    "Centenario",
     "Añelo",
     "Rincón de los Sauces",
-    "Centenario",
-    "Plottier",
     "Cutral Có",
-    "Bahía Blanca",
-    "Córdoba",
+    "Cipolletti",
+    "General Roca",
+    
+    # Casos emblemáticos e históricos de inundaciones en el país
+    "La Plata",             # Crítico por inundaciones pluviales urbanas
+    "Santa Fe Capital",     # Histórico por crecidas del Río Salado / Paraná
+    "Resistencia",          # Vulnerable por sistemas fluviales y precipitaciones intensas
+    "Comodoro Rivadavia",   # Crítico por escorrentía e inundaciones extraordinarias
+    "Concordia",            # Afectado frecuentemente por las crecidas del Río Uruguay
+    
+    # Grandes centros urbanos y otras regiones
     "Buenos Aires",
+    "Córdoba",
+    "Rosario",
     "Salta",
-    "Mendoza",
-    "Rosario"
+    "Mendoza"
 ]
 
 ciudad_select = st.sidebar.selectbox(
-    "Elegí una ciudad",
+    "Elegí una ciudad para analizar",
     ciudades
 )
 
 ciudad_manual = st.sidebar.text_input(
     "O escribí otra ciudad argentina",
-    placeholder="Ejemplo: Cipolletti"
+    placeholder="Ejemplo: Viedma"
 )
 
-if "modo_bahia" not in st.session_state:
-    st.session_state.modo_bahia = False
 
-st.sidebar.markdown("---")
-
-if st.sidebar.button(" Mostrar caso real: Bahía Blanca"):
-    st.session_state.modo_bahia = True
-
-if st.sidebar.button(" Volver a clima actual"):
-    st.session_state.modo_bahia = False
 
 # =====================================================
 # DATOS SEGÚN MODO
