@@ -19,7 +19,7 @@ st.set_page_config(page_title="Riesgo de Inundaciones", layout="wide")
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght=400;600;700;800&display=swap');
 
 .block-container { padding-top: 2rem; padding-bottom: 2rem; }
 html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
@@ -31,10 +31,9 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 """, unsafe_allow_html=True)
 
 # =====================================================
-# 2. BASE DE DATOS GEOGRÁFICA (Asegura 100% de carga)
+# 2. BASE DE DATOS GEOGRÁFICA
 # =====================================================
 
-# Al tener las coordenadas fijas, la app es rapidísima y nunca falla al buscar la ciudad
 COORDENADAS = {
     "Neuquén Capital": {"lat": -38.9516, "lon": -68.0591, "prov": "Neuquén"},
     "Plottier": {"lat": -38.9672, "lon": -68.2292, "prov": "Neuquén"},
@@ -108,7 +107,6 @@ if ciudad_select == "Bahía Blanca (Caso Histórico 2025)":
     drenaje, pendiente = 30, 2
     st.sidebar.warning("⚠️ Modo Simulación: Evento histórico extremo cargado.")
 else:
-    # Carga instantánea desde nuestro diccionario
     ciudad = ciudad_select
     datos_ubicacion = COORDENADAS[ciudad_select]
     latitud = datos_ubicacion["lat"]
@@ -191,12 +189,11 @@ def obtener_nivel_difuso(valor):
 nivel_difuso = obtener_nivel_difuso(riesgo_final)
 
 # =====================================================
-# 7. INTERFAZ: RESULTADOS (GRILLA 2x2 PARA EVITAR CORTES)
+# 7. INTERFAZ: RESULTADOS (Distribución amplia)
 # =====================================================
 
 st.markdown('<div class="section-title">Resumen de Situación</div>', unsafe_allow_html=True)
 
-# Al dividir en 2 columnas, los textos tienen el doble de espacio y no se truncan
 with st.container(border=True):
     col1, col2 = st.columns(2)
     with col1: 
@@ -212,7 +209,7 @@ elif riesgo_final >= 40: st.info("🟡 RIESGO MEDIO")
 else: st.success("🟢 RIESGO BAJO")
 
 # =====================================================
-# 8. INTERFAZ: MAPA 3D Y SEMÁFORO
+# 8. INTERFAZ: MAPA SATELITAL REAL Y SEMÁFORO
 # =====================================================
 
 st.markdown('<div class="section-title">Análisis Territorial</div>', unsafe_allow_html=True)
@@ -229,20 +226,31 @@ with col_mapa:
     df_mapa = pd.DataFrame({
         "lat": [latitud], "lon": [longitud], 
         "color": [color_mapa(nivel_difuso)], 
-        "altura": [max(1000, riesgo_final * 80)]
+        # Multiplicamos la altura para que el cilindro destaque sobre el mapa satelital
+        "altura": [max(1200, riesgo_final * 95)] 
     })
 
-    vista = pdk.ViewState(latitude=latitud, longitude=longitud, zoom=10, pitch=50)
-    
-    capa_riesgo = pdk.Layer(
-        "ColumnLayer", data=df_mapa, get_position="[lon, lat]", get_elevation="altura",
-        get_fill_color="color", radius=2500, elevation_scale=50, pickable=True, extruded=True,
+    # MODIFICACIÓN CLAVE: Agregamos las teselas satelitales de ArcGIS
+    capa_satelital = pdk.Layer(
+        "TileLayer",
+        "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        id="satelital-arcgis",
+        tile_size=256
     )
 
+    capa_riesgo = pdk.Layer(
+        "ColumnLayer", data=df_mapa, get_position="[lon, lat]", get_elevation="altura",
+        get_fill_color="color", radius=1800, elevation_scale=40, pickable=True, extruded=True,
+    )
+
+    # Vista con zoom ideal (11) y cámara inclinada (55) para apreciar la perspectiva
+    vista = pdk.ViewState(latitude=latitud, longitude=longitud, zoom=11, pitch=55, bearing=15)
+
     st.pydeck_chart(pdk.Deck(
-        map_style="light",
-        initial_view_state=vista, layers=[capa_riesgo],
-        tooltip={"html": f"<b>{ciudad}</b><br/>Riesgo Difuso: {nivel_difuso}"}
+        map_style=None, # Ponemos None para anular el mapa plano y dejar ver las fotos satelitales
+        initial_view_state=vista, 
+        layers=[capa_satelital, capa_riesgo],
+        tooltip={"html": f"<div style='font-family: sans-serif;'><b>{ciudad}</b><br/>Riesgo: {nivel_difuso}</div>"}
     ), use_container_width=True)
 
 with col_semaforo:
