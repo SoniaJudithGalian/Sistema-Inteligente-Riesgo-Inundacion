@@ -227,16 +227,36 @@ with col_mapa:
 
     fig_mapa = go.Figure()
 
+    # CAPA 1: Halo exterior semitransparente que indica el RIESGO
     fig_mapa.add_trace(go.Scattermapbox(
         lat=[latitud],
         lon=[longitud],
         mode='markers',
-        marker=dict(size=30, color=color_mapa_hex(nivel_difuso), opacity=0.9),
+        marker=dict(
+            size=35, 
+            color=color_mapa_hex(nivel_difuso), 
+            opacity=0.6  # Al ser semitransparente deja ver las calles de fondo
+        ),
         text=[f"<b>{ciudad}</b><br>Nivel de Riesgo: {nivel_difuso}"],
-        hoverinfo='text'
+        hoverinfo='text',
+        showlegend=False
     ))
 
-    # Uso del estilo carto-positron que es 100% estable y no requiere recargar imágenes externas pesadas
+    # CAPA 2: El punto central exacto de la CIUDAD (Núcleo urbano)
+    fig_mapa.add_trace(go.Scattermapbox(
+        lat=[latitud],
+        lon=[longitud],
+        mode='markers',
+        marker=dict(
+            size=10, 
+            color='#0F172A',  # Color oscuro sólido para el centro
+            opacity=1.0
+        ),
+        hoverinfo='skip',  # Evita que duplique el cartel al pasar el mouse
+        showlegend=False
+    ))
+
+    # Configuración del mapa base
     fig_mapa.update_layout(
         mapbox=dict(
             style="carto-positron", 
@@ -248,7 +268,6 @@ with col_mapa:
     )
 
     st.plotly_chart(fig_mapa, use_container_width=True)
-
 with col_semaforo:
     def crear_semaforo(valor, nivel):
         fig = go.Figure()
