@@ -196,16 +196,20 @@ st.markdown('<div class="section-title">Resumen de Situación</div>', unsafe_all
 with st.container(border=True):
     col1, col2 = st.columns(2)
     with col1: 
-        st.metric("📍 Ciudad Seleccionada", ciudad)
-        st.metric("🤖 Modelo de Machine Learning", prediccion_texto)
+        st.metric("Ciudad Seleccionada", ciudad)
+        st.metric("Modelo de Machine Learning", prediccion_texto)
     with col2: 
-        st.metric("🌧️ Lluvia Registrada", f"{round(lluvia, 1)} mm")
-        st.metric("🧠 Sistema Difuso", f"{nivel_difuso} ({int(riesgo_final)} / 100)")
+        st.metric("Lluvia Registrada", f"{round(lluvia, 1)} mm")
+        st.metric("Sistema Difuso", f"{nivel_difuso} ({int(riesgo_final)} / 100)")
 
-if riesgo_final >= 80: st.error("🚨 RIESGO CRÍTICO DE INUNDACIÓN")
-elif riesgo_final >= 60: st.warning("⚠️ RIESGO ALTO")
-elif riesgo_final >= 40: st.info("🟡 RIESGO MEDIO")
-else: st.success("🟢 RIESGO BAJO")
+if riesgo_final >= 80: 
+    st.error("RIESGO CRÍTICO DE INUNDACIÓN")
+elif riesgo_final >= 60: 
+    st.warning("RIESGO ALTO")
+elif riesgo_final >= 40: 
+    st.info("RIESGO MEDIO")
+else: 
+    st.success("RIESGO BAJO")
 
 # =====================================================
 # 8. INTERFAZ: MAPA SATELITAL (PLOTLY) Y SEMÁFORO
