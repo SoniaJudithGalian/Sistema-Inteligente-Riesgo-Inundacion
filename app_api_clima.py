@@ -22,7 +22,9 @@ st.set_page_config(
     page_title="Riesgo de Inundaciones",
     layout="wide"
 )
-
+if "modo_bahia" not in st.session_state:
+    st.session_state.modo_bahia = False
+    
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght=400;600;700;800&display=swap');
