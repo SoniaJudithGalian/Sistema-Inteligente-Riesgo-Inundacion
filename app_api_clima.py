@@ -235,7 +235,7 @@ with col_mapa:
         marker=dict(
             size=35, 
             color=color_mapa_hex(nivel_difuso), 
-            opacity=0.6  # Al ser semitransparente deja ver las calles de fondo
+            opacity=0.6
         ),
         text=[f"<b>{ciudad}</b><br>Nivel de Riesgo: {nivel_difuso}"],
         hoverinfo='text',
@@ -249,14 +249,14 @@ with col_mapa:
         mode='markers',
         marker=dict(
             size=10, 
-            color='#0F172A',  # Color oscuro sólido para el centro
+            color='#0F172A',
             opacity=1.0
         ),
-        hoverinfo='skip',  # Evita que duplique el cartel al pasar el mouse
+        hoverinfo='skip',
         showlegend=False
     ))
 
-    # Configuración del mapa base
+    # Configuración del mapa base estable
     fig_mapa.update_layout(
         mapbox=dict(
             style="carto-positron", 
@@ -268,6 +268,7 @@ with col_mapa:
     )
 
     st.plotly_chart(fig_mapa, use_container_width=True)
+
 with col_semaforo:
     def crear_semaforo(valor, nivel):
         fig = go.Figure()
