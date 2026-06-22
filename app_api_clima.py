@@ -281,7 +281,7 @@ else:
 
     ciudad_a_buscar = ciudad_manual if ciudad_manual.strip() != "" else ciudad_select
 
-resultados = buscar_ciudad_argentina(ciudad_a_buscar)
+    resultados = buscar_ciudad_argentina(ciudad_a_buscar)
 
     if len(resultados) == 0:
         st.error("No se encontró la ciudad. Probá escribir el nombre de otra forma.")
@@ -342,6 +342,8 @@ resultados = buscar_ciudad_argentina(ciudad_a_buscar)
         10,
         5
     )
+
+
 
 # =====================================================
 # MOSTRAR DATOS DEL CASO BAHÍA BLANCA
