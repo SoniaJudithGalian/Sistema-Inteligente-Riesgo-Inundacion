@@ -21,9 +21,7 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
 
-/* Reduce el espacio en blanco de la parte superior */
 .block-container { padding-top: 2rem; padding-bottom: 2rem; }
-
 html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 
 .main-title { font-size: 46px; font-weight: 800; color: #0F172A; margin-bottom: 0px; }
@@ -33,7 +31,31 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 """, unsafe_allow_html=True)
 
 # =====================================================
-# 2. CARGAR MODELO ML
+# 2. BASE DE DATOS GEOGRÁFICA (Asegura 100% de carga)
+# =====================================================
+
+# Al tener las coordenadas fijas, la app es rapidísima y nunca falla al buscar la ciudad
+COORDENADAS = {
+    "Neuquén Capital": {"lat": -38.9516, "lon": -68.0591, "prov": "Neuquén"},
+    "Plottier": {"lat": -38.9672, "lon": -68.2292, "prov": "Neuquén"},
+    "Centenario": {"lat": -38.8286, "lon": -68.1436, "prov": "Neuquén"},
+    "Añelo": {"lat": -38.3517, "lon": -68.7881, "prov": "Neuquén"},
+    "Cipolletti": {"lat": -38.9406, "lon": -67.9902, "prov": "Río Negro"},
+    "General Roca": {"lat": -39.0333, "lon": -67.5833, "prov": "Río Negro"},
+    "La Plata": {"lat": -34.9215, "lon": -57.9545, "prov": "Buenos Aires"},
+    "Santa Fe Capital": {"lat": -31.6333, "lon": -60.7000, "prov": "Santa Fe"},
+    "Resistencia": {"lat": -27.4606, "lon": -58.9839, "prov": "Chaco"},
+    "Comodoro Rivadavia": {"lat": -45.8641, "lon": -67.4966, "prov": "Chubut"},
+    "Concordia": {"lat": -31.3930, "lon": -58.0209, "prov": "Entre Ríos"},
+    "Buenos Aires": {"lat": -34.6037, "lon": -58.3816, "prov": "CABA"},
+    "Córdoba": {"lat": -31.4135, "lon": -64.1811, "prov": "Córdoba"},
+    "Rosario": {"lat": -32.9468, "lon": -60.6393, "prov": "Santa Fe"},
+    "Salta": {"lat": -24.7821, "lon": -65.4233, "prov": "Salta"},
+    "Mendoza": {"lat": -32.8908, "lon": -68.8272, "prov": "Mendoza"}
+}
+
+# =====================================================
+# 3. CARGAR MODELOS Y APIS
 # =====================================================
 
 try:
@@ -41,10 +63,6 @@ try:
 except Exception as e:
     st.error("Error al cargar el modelo ML. Verifica el archivo 'modelo_ml.pkl'")
     st.stop()
-
-# =====================================================
-# 3. FUNCIONES DE CLIMA Y GEOLOCALIZACIÓN
-# =====================================================
 
 @st.cache_data(ttl=1800)
 def obtener_clima_open_meteo(latitud, longitud):
@@ -62,18 +80,6 @@ def obtener_clima_open_meteo(latitud, longitud):
     humedad_promedio = df_clima["relative_humidity_2m"].mean()
     return lluvia_24h, humedad_promedio, df_clima
 
-@st.cache_data(ttl=3600)
-def buscar_ciudad_argentina(nombre_ciudad):
-    url = "https://geocoding-api.open-meteo.com/v1/search"
-    params = {"name": nombre_ciudad, "count": 1, "language": "es", "format": "json", "countryCode": "AR"}
-    try:
-        respuesta = requests.get(url, params=params, timeout=10)
-        if respuesta.status_code == 200 and "results" in respuesta.json():
-            return respuesta.json()["results"][0]
-        return None
-    except Exception:
-        return None
-
 # =====================================================
 # 4. TÍTULO PRINCIPAL
 # =====================================================
@@ -87,15 +93,8 @@ st.markdown('<div class="subtitle">Aplicación con Machine Learning, Lógica Dif
 
 st.sidebar.markdown("## Monitoreo territorial")
 
-ciudades = [
-    "Neuquén Capital", "Plottier", "Centenario", "Añelo", 
-    "Cipolletti", "General Roca", "La Plata", "Santa Fe Capital", 
-    "Resistencia", "Comodoro Rivadavia", "Concordia", "Buenos Aires", 
-    "Córdoba", "Rosario", "Salta", "Mendoza", 
-    "Bahía Blanca (Caso Histórico 2025)"
-]
-
-ciudad_select = st.sidebar.selectbox("Elegí una ciudad para analizar", ciudades)
+opciones_ciudades = list(COORDENADAS.keys()) + ["Bahía Blanca (Caso Histórico 2025)"]
+ciudad_select = st.sidebar.selectbox("Elegí una ciudad para analizar", opciones_ciudades)
 
 df_clima = None
 es_caso_historico = False
@@ -105,23 +104,16 @@ if ciudad_select == "Bahía Blanca (Caso Histórico 2025)":
     ciudad = "Bahía Blanca"
     provincia = "Buenos Aires"
     latitud, longitud = -38.7196, -62.2724
-    lluvia = 290.0
-    humedad = 95.0
-    drenaje = 30
-    pendiente = 2
-    
+    lluvia, humedad = 290.0, 95.0
+    drenaje, pendiente = 30, 2
     st.sidebar.warning("⚠️ Modo Simulación: Evento histórico extremo cargado.")
-
 else:
-    lugar = buscar_ciudad_argentina(ciudad_select)
-    if lugar is None:
-        st.error("No se encontraron coordenadas para la ciudad.")
-        st.stop()
-
-    ciudad = lugar.get("name", ciudad_select)
-    provincia = lugar.get("admin1", "")
-    latitud = lugar.get("latitude")
-    longitud = lugar.get("longitude")
+    # Carga instantánea desde nuestro diccionario
+    ciudad = ciudad_select
+    datos_ubicacion = COORDENADAS[ciudad_select]
+    latitud = datos_ubicacion["lat"]
+    longitud = datos_ubicacion["lon"]
+    provincia = datos_ubicacion["prov"]
 
     st.sidebar.markdown("### Datos Climáticos")
     usar_api = st.sidebar.checkbox("Usar datos climáticos automáticos", value=True)
@@ -199,22 +191,25 @@ def obtener_nivel_difuso(valor):
 nivel_difuso = obtener_nivel_difuso(riesgo_final)
 
 # =====================================================
-# 7. INTERFAZ: RESULTADOS 
+# 7. INTERFAZ: RESULTADOS (GRILLA 2x2 PARA EVITAR CORTES)
 # =====================================================
 
 st.markdown('<div class="section-title">Resumen de Situación</div>', unsafe_allow_html=True)
 
+# Al dividir en 2 columnas, los textos tienen el doble de espacio y no se truncan
 with st.container(border=True):
-    col1, col2, col3, col4 = st.columns(4)
-    with col1: st.metric("Ciudad", ciudad)
-    with col2: st.metric("Lluvia Total", f"{round(lluvia, 1)} mm")
-    with col3: st.metric("Modelo ML", prediccion_texto)
-    with col4: st.metric("Mod. Difuso", f"{nivel_difuso} ({int(riesgo_final)})")
+    col1, col2 = st.columns(2)
+    with col1: 
+        st.metric("📍 Ciudad Seleccionada", ciudad)
+        st.metric("🤖 Modelo de Machine Learning", prediccion_texto)
+    with col2: 
+        st.metric("🌧️ Lluvia Registrada", f"{round(lluvia, 1)} mm")
+        st.metric("🧠 Sistema Difuso", f"{nivel_difuso} ({int(riesgo_final)} / 100)")
 
-if riesgo_final >= 80: st.error("RIESGO CRÍTICO DE INUNDACIÓN")
-elif riesgo_final >= 60: st.warning("RIESGO ALTO")
-elif riesgo_final >= 40: st.info("RIESGO MEDIO")
-else: st.success("RIESGO BAJO")
+if riesgo_final >= 80: st.error("🚨 RIESGO CRÍTICO DE INUNDACIÓN")
+elif riesgo_final >= 60: st.warning("⚠️ RIESGO ALTO")
+elif riesgo_final >= 40: st.info("🟡 RIESGO MEDIO")
+else: st.success("🟢 RIESGO BAJO")
 
 # =====================================================
 # 8. INTERFAZ: MAPA 3D Y SEMÁFORO
