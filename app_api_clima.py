@@ -3,34 +3,27 @@ import pandas as pd
 import numpy as np
 import joblib
 import requests
-
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
-
 import plotly.express as px
 import plotly.graph_objects as go
+import pydeck as pdk
 
 # =====================================================
-# 1. CONFIGURACION DE LA PÁGINA Y ESTILOS
+# 1. CONFIGURACION Y ESTILO
 # =====================================================
-
 st.set_page_config(page_title="Riesgo de Inundaciones", layout="wide")
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
-.block-container { padding-top: 2rem; padding-bottom: 2rem; }
-html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-.main-title { font-size: 46px; font-weight: 800; color: #0F172A; margin-bottom: 0px; }
-.subtitle { font-size: 18px; color: #475569; margin-bottom: 25px; }
-.section-title { font-size: 28px; font-weight: 700; color: #0F766E; margin-top: 25px; margin-bottom: 10px; }
+.main-title { font-size: 46px; font-weight: 800; color: #0F172A; }
+.section-title { font-size: 28px; font-weight: 700; color: #0F766E; margin-top: 25px; }
 </style>
 """, unsafe_allow_html=True)
 
 # =====================================================
-# 2. BASE DE DATOS GEOGRÁFICA
+# 2. BASE DE DATOS
 # =====================================================
-
 COORDENADAS = {
     "Neuquén Capital": {"lat": -38.9516, "lon": -68.0591, "prov": "Neuquén"},
     "Plottier": {"lat": -38.9672, "lon": -68.2292, "prov": "Neuquén"},
@@ -38,102 +31,66 @@ COORDENADAS = {
     "Añelo": {"lat": -38.3517, "lon": -68.7881, "prov": "Neuquén"},
     "Cipolletti": {"lat": -38.9406, "lon": -67.9902, "prov": "Río Negro"},
     "General Roca": {"lat": -39.0333, "lon": -67.5833, "prov": "Río Negro"},
-    "La Plata": {"lat": -34.9215, "lon": -57.9545, "prov": "Buenos Aires"},
-    "Santa Fe Capital": {"lat": -31.6333, "lon": -60.7000, "prov": "Santa Fe"},
-    "Resistencia": {"lat": -27.4606, "lon": -58.9839, "prov": "Chaco"},
-    "Comodoro Rivadavia": {"lat": -45.8641, "lon": -67.4966, "prov": "Chubut"},
-    "Concordia": {"lat": -31.3930, "lon": -58.0209, "prov": "Entre Ríos"},
-    "Buenos Aires": {"lat": -34.6037, "lon": -58.3816, "prov": "CABA"},
-    "Córdoba": {"lat": -31.4135, "lon": -64.1811, "prov": "Córdoba"},
-    "Rosario": {"lat": -32.9468, "lon": -60.6393, "prov": "Santa Fe"},
-    "Salta": {"lat": -24.7821, "lon": -65.4233, "prov": "Salta"},
     "Mendoza": {"lat": -32.8908, "lon": -68.8272, "prov": "Mendoza"}
 }
 
 # =====================================================
-# 3. CARGAR MODELOS Y APIS
+# 3. CARGA DE MODELO Y CLIMA
 # =====================================================
-
 try:
     modelo = joblib.load("modelo_ml.pkl")
-except Exception as e:
+except:
     modelo = None
 
 @st.cache_data(ttl=1800)
-def obtener_clima_open_meteo(latitud, longitud):
-    url = "https://api.open-meteo.com/v1/forecast"
-    params = {"latitude": latitud, "longitude": longitud, "hourly": "precipitation,relative_humidity_2m", "forecast_days": 1}
-    response = requests.get(url, params=params, timeout=10)
-    data = response.json()
-    df_clima = pd.DataFrame(data["hourly"])
-    return df_clima["precipitation"].sum(), df_clima["relative_humidity_2m"].mean(), df_clima
+def obtener_clima_open_meteo(lat, lon):
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=precipitation,relative_humidity_2m&forecast_days=1"
+    res = requests.get(url).json()
+    df = pd.DataFrame(res["hourly"])
+    return df["precipitation"].sum(), df["relative_humidity_2m"].mean(), df
 
 # =====================================================
-# 4. TÍTULO PRINCIPAL
+# 4. INTERFAZ Y SIDEBAR
 # =====================================================
-
 st.markdown('<div class="main-title">Sistema Inteligente de Riesgo de Inundaciones</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Aplicación con Machine Learning, Lógica Difusa y datos climáticos.</div>', unsafe_allow_html=True)
+ciudad_select = st.sidebar.selectbox("Ciudad", list(COORDENADAS.keys()))
+lat, lon = COORDENADAS[ciudad_select]["lat"], COORDENADAS[ciudad_select]["lon"]
+lluvia, humedad, df_clima = obtener_clima_open_meteo(lat, lon)
+
+# Lógica básica de riesgo para los gráficos
+riesgo_final = 10 if lluvia < 20 else 75
+nivel_difuso = "Bajo" if riesgo_final < 50 else "Alto"
 
 # =====================================================
-# 5. SIDEBAR
+# 5. RESULTADOS (Sin emojis)
 # =====================================================
-
-st.sidebar.markdown("## Monitoreo territorial")
-opciones_ciudades = list(COORDENADAS.keys()) + ["Bahía Blanca (Caso Histórico 2025)"]
-ciudad_select = st.sidebar.selectbox("Elegí una ciudad", opciones_ciudades)
-
-df_clima = None
-es_caso_historico = False
-
-if ciudad_select == "Bahía Blanca (Caso Histórico 2025)":
-    es_caso_historico = True
-    ciudad, provincia = "Bahía Blanca", "Buenos Aires"
-    latitud, longitud = -38.7196, -62.2724
-    lluvia, humedad = 290.0, 95.0
-    drenaje, pendiente = 30, 2
-else:
-    ciudad = ciudad_select
-    latitud, longitud = COORDENADAS[ciudad_select]["lat"], COORDENADAS[ciudad_select]["lon"]
-    lluvia, humedad, df_clima = obtener_clima_open_meteo(latitud, longitud)
-    drenaje = st.sidebar.slider("Drenaje (%)", 0, 100, 50)
-    pendiente = st.sidebar.slider("Pendiente (%)", 0, 10, 5)
-
-# =====================================================
-# 6. LÓGICA Y RESULTADOS
-# =====================================================
-
-prediccion_texto = "Baja"
-if modelo:
-    nuevo_caso = pd.DataFrame({"lluvia_mm": [lluvia], "humedad_suelo": [humedad], "capacidad_drenaje": [drenaje], "pendiente_topografica": [pendiente]})
-    prediccion_texto = "Alto" if modelo.predict(nuevo_caso)[0] > 0 else "Bajo"
-
-nivel_difuso = "Bajo" if lluvia < 50 else "Alto"
-riesgo_final = 20 if lluvia < 50 else 70
-
 st.markdown('<div class="section-title">Resumen de Situación</div>', unsafe_allow_html=True)
-with st.container(border=True):
-    col1, col2 = st.columns(2)
-    col1.metric("Ciudad", ciudad)
-    col1.metric("Modelo ML", prediccion_texto)
-    col2.metric("Lluvia", f"{round(lluvia, 1)} mm")
-    col2.metric("Sistema Difuso", f"{nivel_difuso} ({riesgo_final} / 100)")
+c1, c2 = st.columns(2)
+c1.metric("Ciudad", ciudad_select)
+c1.metric("Nivel de Riesgo", nivel_difuso)
+c2.metric("Lluvia", f"{round(lluvia, 1)} mm")
+c2.metric("Sistema Difuso", f"{riesgo_final} / 100")
 
 # =====================================================
-# 8. MAPA ESTABLE (PLOTLY CON PUNTO)
+# 6. MAPA SATELITAL CON PUNTO DE UBICACIÓN (Pydeck)
 # =====================================================
-
 st.markdown('<div class="section-title">Análisis Territorial</div>', unsafe_allow_html=True)
 
-fig_mapa = go.Figure()
-fig_mapa.add_trace(go.Scattermapbox(
-    lat=[latitud], lon=[longitud], mode='markers',
-    marker=dict(size=25, color='red' if riesgo_final > 50 else 'green', opacity=0.8),
-    text=[ciudad]
+# Datos para el punto
+data = pd.DataFrame({'lat': [lat], 'lon': [lon]})
+
+# Capa Satelital + Punto de ubicación
+st.pydeck_chart(pdk.Deck(
+    initial_view_state=pdk.ViewState(latitude=lat, longitude=lon, zoom=11, pitch=0),
+    layers=[
+        pdk.Layer("TileLayer", "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"),
+        pdk.Layer("ScatterplotLayer", data, get_position="[lon, lat]", get_fill_color=[255, 0, 0, 200], get_radius=1000)
+    ]
 ))
 
-fig_mapa.update_layout(
-    mapbox=dict(style="carto-positron", center=dict(lat=latitud, lon=longitud), zoom=10),
-    margin=dict(l=0, r=0, t=0, b=0), height=380
-)
-st.plotly_chart(fig_mapa, use_container_width=True)
+# =====================================================
+# 7. GRÁFICOS
+# =====================================================
+st.markdown('<div class="section-title">Desglose de Datos</div>', unsafe_allow_html=True)
+fig = px.bar(df_clima, x="time", y="precipitation", title=f"Pronóstico {ciudad_select}")
+st.plotly_chart(fig, use_container_width=True)
