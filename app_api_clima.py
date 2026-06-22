@@ -9,7 +9,6 @@ from skfuzzy import control as ctrl
 
 import plotly.express as px
 import plotly.graph_objects as go
-import pydeck as pdk
 
 # =====================================================
 # 1. CONFIGURACION DE LA PÁGINA Y ESTILOS
@@ -84,7 +83,7 @@ def obtener_clima_open_meteo(latitud, longitud):
 # =====================================================
 
 st.markdown('<div class="main-title">Sistema Inteligente de Riesgo de Inundaciones</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Aplicación con Machine Learning, Lógica Difusa y datos climáticos de Open-Meteo.</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Aplicación con Machine Learning, Lógica Difusa y datos climáticos.</div>', unsafe_allow_html=True)
 
 # =====================================================
 # 5. SIDEBAR Y SELECCIÓN DE DATOS
@@ -191,3 +190,111 @@ nivel_difuso = obtener_nivel_difuso(riesgo_final)
 # =====================================================
 # 7. INTERFAZ: RESULTADOS
 # =====================================================
+
+st.markdown('<div class="section-title">Resumen de Situación</div>', unsafe_allow_html=True)
+
+with st.container(border=True):
+    col1, col2 = st.columns(2)
+    with col1: 
+        st.metric("📍 Ciudad Seleccionada", ciudad)
+        st.metric("🤖 Modelo de Machine Learning", prediccion_texto)
+    with col2: 
+        st.metric("🌧️ Lluvia Registrada", f"{round(lluvia, 1)} mm")
+        st.metric("🧠 Sistema Difuso", f"{nivel_difuso} ({int(riesgo_final)} / 100)")
+
+if riesgo_final >= 80: st.error("🚨 RIESGO CRÍTICO DE INUNDACIÓN")
+elif riesgo_final >= 60: st.warning("⚠️ RIESGO ALTO")
+elif riesgo_final >= 40: st.info("🟡 RIESGO MEDIO")
+else: st.success("🟢 RIESGO BAJO")
+
+# =====================================================
+# 8. INTERFAZ: MAPA SATELITAL (PLOTLY) Y SEMÁFORO
+# =====================================================
+
+st.markdown('<div class="section-title">Análisis Territorial</div>', unsafe_allow_html=True)
+
+col_mapa, col_semaforo = st.columns([1.5, 1])
+
+with col_mapa:
+    def color_mapa_hex(nivel):
+        if nivel == "Bajo": return "#22C55E"
+        elif nivel == "Medio": return "#EAB308"
+        elif nivel == "Alto": return "#F97316"
+        else: return "#EF4444"
+
+    # Mapa satelital ultra estable creado con Plotly nativo
+    fig_mapa = go.Figure()
+
+    fig_mapa.add_trace(go.Scattermapbox(
+        lat=[latitud],
+        lon=[longitud],
+        mode='markers',
+        marker=dict(size=35, color=color_mapa_hex(nivel_difuso), opacity=0.9),
+        text=[f"<b>{ciudad}</b><br>Nivel de Riesgo: {nivel_difuso}"],
+        hoverinfo='text'
+    ))
+
+    fig_mapa.update_layout(
+        mapbox=dict(
+            style="white-bg", 
+            layers=[
+                dict(
+                    sourcetype="raster",
+                    source=["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+                )
+            ],
+            center=dict(lat=latitud, lon=longitud),
+            zoom=11.5
+        ),
+        margin=dict(l=0, r=0, t=0, b=0),
+        height=380
+    )
+
+    st.plotly_chart(fig_mapa, use_container_width=True)
+
+with col_semaforo:
+    def crear_semaforo(valor, nivel):
+        fig = go.Figure()
+        segmentos = [(0, 35, "#22C55E"), (25, 60, "#FACC15"), (50, 85, "#F97316"), (75, 100, "#EF4444")]
+        for inicio, fin, color in segmentos:
+            theta = np.linspace(inicio * 3.6, fin * 3.6, 80)
+            fig.add_trace(go.Scatterpolar(r=np.ones_like(theta), theta=theta, mode="lines", line=dict(color=color, width=32), opacity=0.8, showlegend=False))
+        
+        theta_valor = valor * 3.6
+        fig.add_trace(go.Scatterpolar(r=[0, 0.85], theta=[theta_valor, theta_valor], mode="lines+markers", line=dict(color="#0F172A", width=5), marker=dict(size=[1, 14], color="#0F172A"), showlegend=False))
+        
+        fig.update_layout(
+            title=dict(text=f"Riesgo: {round(valor, 1)} / 100", x=0.5, font=dict(size=18)),
+            polar=dict(radialaxis=dict(visible=False, range=[0, 1.1]), angularaxis=dict(visible=False, rotation=90, direction="clockwise")),
+            height=380, margin=dict(l=10, r=10, t=40, b=10),
+            annotations=[dict(text=f"<b>{int(valor)}</b><br>{nivel.upper()}", x=0.5, y=0.5, showarrow=False, font=dict(size=22))]
+        )
+        return fig
+
+    st.plotly_chart(crear_semaforo(riesgo_final, nivel_difuso), use_container_width=True)
+
+# =====================================================
+# 9. INTERFAZ: GRÁFICOS SECUNDARIOS
+# =====================================================
+
+st.markdown('<div class="section-title">Desglose de Datos</div>', unsafe_allow_html=True)
+col_graficos_izq, col_graficos_der = st.columns(2)
+
+with col_graficos_izq:
+    st.markdown("**Variables Utilizadas**")
+    df_inputs = pd.DataFrame({"Variable": ["Lluvia", "Humedad", "Drenaje", "Pendiente"], "Valor": [lluvia, humedad, drenaje, pendiente]})
+    fig_bar = px.bar(df_inputs, x="Variable", y="Valor", text="Valor", color_discrete_sequence=["#0F766E"])
+    fig_bar.update_layout(height=250, margin=dict(l=10, r=10, t=10, b=10))
+    st.plotly_chart(fig_bar, use_container_width=True)
+
+with col_graficos_der:
+    if es_caso_historico:
+        st.info("Visualizando caso histórico. No hay pronóstico horario futuro para esta fecha.")
+    elif df_clima is not None:
+        st.markdown(f"**Pronóstico horario ({ciudad})**")
+        df_clima["time"] = pd.to_datetime(df_clima["time"])
+        fig_lluvia = px.bar(df_clima, x="time", y="precipitation", labels={"time": "", "precipitation": "mm"}, color_discrete_sequence=["#3B82F6"])
+        fig_lluvia.update_layout(height=250, margin=dict(l=10, r=10, t=10, b=10))
+        st.plotly_chart(fig_lluvia, use_container_width=True)
+    else:
+        st.info("Ingreso manual activado. No hay pronóstico horario de la API.")
