@@ -53,14 +53,15 @@ COORDENADAS = {
 }
 
 # =====================================================
-# 3. CARGAR MODELOS Y APIS
+# 3. CARGAR MODELOS Y APIS (A PRUEBA DE FALLOS)
 # =====================================================
 
 try:
+    # Intenta cargar el modelo, pero NO corta la app si falla
     modelo = joblib.load("modelo_ml.pkl")
-except Exception as e:
-    st.error("Error al cargar el modelo ML. Verifica el archivo 'modelo_ml.pkl'")
-    st.stop()
+except Exception:
+    modelo = None
+    st.warning("Aviso: El archivo del modelo ML no se encontró, pero el sistema difuso sigue funcionando.")
 
 @st.cache_data(ttl=1800)
 def obtener_clima_open_meteo(latitud, longitud):
@@ -139,11 +140,13 @@ else:
 # 6. MACHINE LEARNING & LÓGICA DIFUSA
 # =====================================================
 
-nuevo_caso = pd.DataFrame({"lluvia_mm": [lluvia], "humedad_suelo": [humedad], "capacidad_drenaje": [drenaje], "pendiente_topografica": [pendiente]})
-prediccion_ml = modelo.predict(nuevo_caso)
-
-clases_riesgo = {0: "Bajo", 1: "Medio", 2: "Alto", 3: "Crítico"}
-prediccion_texto = clases_riesgo.get(int(prediccion_ml[0]), "Desconocido")
+if modelo is not None:
+    nuevo_caso = pd.DataFrame({"lluvia_mm": [lluvia], "humedad_suelo": [humedad], "capacidad_drenaje": [drenaje], "pendiente_topografica": [pendiente]})
+    prediccion_ml = modelo.predict(nuevo_caso)
+    clases_riesgo = {0: "Bajo", 1: "Medio", 2: "Alto", 3: "Crítico"}
+    prediccion_texto = clases_riesgo.get(int(prediccion_ml[0]), "Desconocido")
+else:
+    prediccion_texto = "No disponible"
 
 lluvia_fz = ctrl.Antecedent(np.arange(0, 121, 1), "lluvia")
 humedad_fz = ctrl.Antecedent(np.arange(0, 101, 1), "humedad")
@@ -208,7 +211,7 @@ elif riesgo_final >= 40: st.info("RIESGO MEDIO")
 else: st.success("RIESGO BAJO")
 
 # =====================================================
-# 8. INTERFAZ: MAPA SATELITAL (PLOTLY) Y SEMÁFORO
+# 8. INTERFAZ: MAPA ESTABLE (PLOTLY) Y SEMÁFORO
 # =====================================================
 
 st.markdown('<div class="section-title">Análisis Territorial</div>', unsafe_allow_html=True)
@@ -222,28 +225,21 @@ with col_mapa:
         elif nivel == "Alto": return "#F97316"
         else: return "#EF4444"
 
-    # Mapa satelital ultra estable creado con Plotly nativo
     fig_mapa = go.Figure()
 
     fig_mapa.add_trace(go.Scattermapbox(
         lat=[latitud],
         lon=[longitud],
         mode='markers',
-        # Punto limpio que cambia de color según la alerta
-        marker=dict(size=35, color=color_mapa_hex(nivel_difuso), opacity=0.9),
+        marker=dict(size=30, color=color_mapa_hex(nivel_difuso), opacity=0.9),
         text=[f"<b>{ciudad}</b><br>Nivel de Riesgo: {nivel_difuso}"],
         hoverinfo='text'
     ))
 
+    # Uso del estilo carto-positron que es 100% estable y no requiere recargar imágenes externas pesadas
     fig_mapa.update_layout(
         mapbox=dict(
-            style="white-bg", 
-            layers=[
-                dict(
-                    sourcetype="raster",
-                    source=["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
-                )
-            ],
+            style="carto-positron", 
             center=dict(lat=latitud, lon=longitud),
             zoom=11.5
         ),
