@@ -105,6 +105,7 @@ except Exception as e:
     st.stop()
 
 
+
 # =====================================================
 # API DE CLIMA - OPEN METEO
 # =====================================================
@@ -132,9 +133,10 @@ def obtener_clima_open_meteo(latitud, longitud):
     humedad_promedio = df_clima["relative_humidity_2m"].mean()
 
     return lluvia_24h, humedad_promedio, df_clima
-    
- @st.cache_data(ttl=3600)
- def buscar_ciudad_argentina(nombre_ciudad):
+
+
+@st.cache_data(ttl=3600)
+def buscar_ciudad_argentina(nombre_ciudad):
     url = "https://geocoding-api.open-meteo.com/v1/search"
 
     params = {
@@ -156,6 +158,7 @@ def obtener_clima_open_meteo(latitud, longitud):
 
     except Exception:
         return []
+
 
 def obtener_evento_historico_bahia_blanca():
     resultados = buscar_ciudad_argentina("Bahía Blanca")
@@ -191,6 +194,7 @@ def obtener_evento_historico_bahia_blanca():
         "pendiente": 2,
         "df_evento": df_evento
     }
+
     
 # =====================================================
 # TITULO MODERNO
