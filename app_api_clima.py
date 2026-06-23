@@ -90,7 +90,7 @@ st.markdown(
     }
 
     .card-value {
-        font-size: 29px;
+        font-size: 28px;
         color: #0F172A;
         font-weight: 800;
         margin-bottom: 4px;
@@ -160,7 +160,7 @@ st.markdown(
 
 
 # =====================================================
-# PALETA DE COLORES
+# COLORES
 # =====================================================
 
 COLOR_AZUL = "#0F172A"
@@ -173,69 +173,49 @@ COLOR_ROJO = "#EF4444"
 
 
 # =====================================================
-# CIUDADES Y DATOS TERRITORIALES REFERENCIALES
+# CIUDADES
 # =====================================================
 
 CIUDADES = {
     "Neuquén Capital": {
         "lat": -38.9516,
-        "lon": -68.0591,
-        "drenaje": 55,
-        "pendiente": 3
+        "lon": -68.0591
     },
     "Bahía Blanca": {
         "lat": -38.7183,
-        "lon": -62.2663,
-        "drenaje": 30,
-        "pendiente": 2
+        "lon": -62.2663
     },
     "Buenos Aires": {
         "lat": -34.6037,
-        "lon": -58.3816,
-        "drenaje": 65,
-        "pendiente": 1
+        "lon": -58.3816
     },
     "Córdoba": {
         "lat": -31.4201,
-        "lon": -64.1888,
-        "drenaje": 60,
-        "pendiente": 4
+        "lon": -64.1888
     },
     "Rosario": {
         "lat": -32.9442,
-        "lon": -60.6505,
-        "drenaje": 55,
-        "pendiente": 1
+        "lon": -60.6505
     },
     "Mendoza": {
         "lat": -32.8895,
-        "lon": -68.8458,
-        "drenaje": 60,
-        "pendiente": 5
+        "lon": -68.8458
     },
     "La Plata": {
         "lat": -34.9215,
-        "lon": -57.9545,
-        "drenaje": 45,
-        "pendiente": 1
+        "lon": -57.9545
     },
     "Mar del Plata": {
         "lat": -38.0055,
-        "lon": -57.5426,
-        "drenaje": 55,
-        "pendiente": 3
+        "lon": -57.5426
     },
     "Salta": {
         "lat": -24.7821,
-        "lon": -65.4232,
-        "drenaje": 50,
-        "pendiente": 4
+        "lon": -65.4232
     },
     "San Miguel de Tucumán": {
         "lat": -26.8083,
-        "lon": -65.2176,
-        "drenaje": 45,
-        "pendiente": 3
+        "lon": -65.2176
     }
 }
 
@@ -248,18 +228,16 @@ CASO_HISTORICO_BAHIA = {
     "lluvia_acumulada_documentada_mm": 312,
     "lluvia_evento_principal_mm": 290,
     "humedad_referencial": 95,
-    "drenaje_referencial": 20,
-    "pendiente_referencial": 2,
     "descripcion": (
         "Evento histórico de inundación ocurrido en Bahía Blanca durante marzo de 2025. "
-        "El período considerado abarca del 4 al 8 de marzo, ya que el evento meteorológico "
-        "se desarrolló durante varios días y produjo inundaciones severas."
+        "Se analiza el período completo del 4 al 8 de marzo, con foco en el evento extremo "
+        "registrado el 7 de marzo."
     )
 }
 
 
 # =====================================================
-# FUNCIONES DE API
+# API OPEN-METEO
 # =====================================================
 
 @st.cache_data(ttl=1800)
@@ -304,6 +282,7 @@ def obtener_clima_historico_open_meteo(latitud, longitud, fecha_inicio, fecha_fi
 
     data = response.json()
     df_historico = pd.DataFrame(data["hourly"])
+
     df_historico["time"] = pd.to_datetime(df_historico["time"])
     df_historico["fecha"] = df_historico["time"].dt.date
 
@@ -328,7 +307,7 @@ def obtener_clima_historico_open_meteo(latitud, longitud, fecha_inicio, fecha_fi
 
 
 # =====================================================
-# CARGA DEL MODELO ML
+# MODELO ML
 # =====================================================
 
 @st.cache_resource
@@ -371,7 +350,7 @@ def interpretar_prediccion_ml(prediccion):
 
 
 # =====================================================
-# LOGICA DIFUSA
+# LOGICA DIFUSA CORREGIDA
 # =====================================================
 
 def crear_sistema_difuso():
@@ -381,39 +360,44 @@ def crear_sistema_difuso():
     pendiente_fz = ctrl.Antecedent(np.arange(0, 11, 1), "pendiente")
     riesgo_fz = ctrl.Consequent(np.arange(0, 101, 1), "riesgo")
 
-    lluvia_fz["baja"] = fuzz.trimf(lluvia_fz.universe, [0, 0, 40])
-    lluvia_fz["media"] = fuzz.trimf(lluvia_fz.universe, [25, 70, 120])
-    lluvia_fz["alta"] = fuzz.trimf(lluvia_fz.universe, [90, 160, 230])
-    lluvia_fz["extrema"] = fuzz.trimf(lluvia_fz.universe, [200, 350, 350])
+    lluvia_fz["baja"] = fuzz.trimf(lluvia_fz.universe, [0, 0, 50])
+    lluvia_fz["media"] = fuzz.trimf(lluvia_fz.universe, [30, 80, 140])
+    lluvia_fz["alta"] = fuzz.trimf(lluvia_fz.universe, [100, 170, 250])
+    lluvia_fz["extrema"] = fuzz.trimf(lluvia_fz.universe, [220, 350, 350])
 
-    humedad_fz["baja"] = fuzz.trimf(humedad_fz.universe, [0, 0, 40])
-    humedad_fz["media"] = fuzz.trimf(humedad_fz.universe, [25, 55, 80])
-    humedad_fz["alta"] = fuzz.trimf(humedad_fz.universe, [65, 100, 100])
+    humedad_fz["baja"] = fuzz.trimf(humedad_fz.universe, [0, 0, 45])
+    humedad_fz["media"] = fuzz.trimf(humedad_fz.universe, [30, 60, 85])
+    humedad_fz["alta"] = fuzz.trimf(humedad_fz.universe, [70, 100, 100])
 
-    drenaje_fz["bajo"] = fuzz.trimf(drenaje_fz.universe, [0, 0, 40])
-    drenaje_fz["medio"] = fuzz.trimf(drenaje_fz.universe, [25, 55, 80])
+    drenaje_fz["bajo"] = fuzz.trimf(drenaje_fz.universe, [0, 0, 45])
+    drenaje_fz["medio"] = fuzz.trimf(drenaje_fz.universe, [30, 55, 80])
     drenaje_fz["alto"] = fuzz.trimf(drenaje_fz.universe, [65, 100, 100])
 
     pendiente_fz["llana"] = fuzz.trimf(pendiente_fz.universe, [0, 0, 3])
     pendiente_fz["moderada"] = fuzz.trimf(pendiente_fz.universe, [2, 5, 8])
     pendiente_fz["alta"] = fuzz.trimf(pendiente_fz.universe, [6, 10, 10])
 
-    riesgo_fz["bajo"] = fuzz.trimf(riesgo_fz.universe, [0, 0, 35])
+    riesgo_fz["bajo"] = fuzz.trimf(riesgo_fz.universe, [0, 10, 35])
     riesgo_fz["medio"] = fuzz.trimf(riesgo_fz.universe, [25, 50, 70])
     riesgo_fz["alto"] = fuzz.trimf(riesgo_fz.universe, [60, 75, 90])
     riesgo_fz["critico"] = fuzz.trimf(riesgo_fz.universe, [80, 100, 100])
 
     reglas = [
         ctrl.Rule(lluvia_fz["baja"] & drenaje_fz["alto"], riesgo_fz["bajo"]),
-        ctrl.Rule(lluvia_fz["baja"] & humedad_fz["baja"], riesgo_fz["bajo"]),
+        ctrl.Rule(lluvia_fz["baja"] & drenaje_fz["medio"], riesgo_fz["bajo"]),
+        ctrl.Rule(lluvia_fz["baja"] & drenaje_fz["bajo"], riesgo_fz["medio"]),
+        ctrl.Rule(lluvia_fz["baja"] & humedad_fz["alta"] & drenaje_fz["bajo"], riesgo_fz["medio"]),
 
+        ctrl.Rule(lluvia_fz["media"] & drenaje_fz["alto"], riesgo_fz["medio"]),
         ctrl.Rule(lluvia_fz["media"] & drenaje_fz["medio"], riesgo_fz["medio"]),
-        ctrl.Rule(lluvia_fz["media"] & humedad_fz["media"], riesgo_fz["medio"]),
         ctrl.Rule(lluvia_fz["media"] & drenaje_fz["bajo"], riesgo_fz["alto"]),
+        ctrl.Rule(lluvia_fz["media"] & humedad_fz["alta"], riesgo_fz["alto"]),
+        ctrl.Rule(lluvia_fz["media"] & pendiente_fz["llana"], riesgo_fz["medio"]),
 
-        ctrl.Rule(lluvia_fz["alta"], riesgo_fz["alto"]),
-        ctrl.Rule(lluvia_fz["alta"] & humedad_fz["alta"], riesgo_fz["alto"]),
+        ctrl.Rule(lluvia_fz["alta"] & drenaje_fz["alto"], riesgo_fz["alto"]),
+        ctrl.Rule(lluvia_fz["alta"] & drenaje_fz["medio"], riesgo_fz["alto"]),
         ctrl.Rule(lluvia_fz["alta"] & drenaje_fz["bajo"], riesgo_fz["critico"]),
+        ctrl.Rule(lluvia_fz["alta"] & humedad_fz["alta"], riesgo_fz["alto"]),
         ctrl.Rule(lluvia_fz["alta"] & pendiente_fz["llana"], riesgo_fz["alto"]),
 
         ctrl.Rule(lluvia_fz["extrema"], riesgo_fz["critico"]),
@@ -422,6 +406,7 @@ def crear_sistema_difuso():
         ctrl.Rule(lluvia_fz["extrema"] & pendiente_fz["llana"], riesgo_fz["critico"]),
 
         ctrl.Rule(humedad_fz["alta"] & drenaje_fz["bajo"], riesgo_fz["alto"]),
+        ctrl.Rule(pendiente_fz["llana"] & drenaje_fz["bajo"] & humedad_fz["alta"], riesgo_fz["alto"]),
         ctrl.Rule(drenaje_fz["alto"] & lluvia_fz["baja"], riesgo_fz["bajo"]),
     ]
 
@@ -431,6 +416,11 @@ def crear_sistema_difuso():
 
 
 def calcular_riesgo_difuso(lluvia, humedad, drenaje, pendiente):
+    lluvia = float(np.clip(lluvia, 0, 350))
+    humedad = float(np.clip(humedad, 0, 100))
+    drenaje = float(np.clip(drenaje, 0, 100))
+    pendiente = float(np.clip(pendiente, 0, 10))
+
     sistema, lluvia_fz, humedad_fz, drenaje_fz, pendiente_fz, riesgo_fz = crear_sistema_difuso()
 
     simulador = ctrl.ControlSystemSimulation(sistema)
@@ -440,9 +430,11 @@ def calcular_riesgo_difuso(lluvia, humedad, drenaje, pendiente):
     simulador.input["drenaje"] = drenaje
     simulador.input["pendiente"] = pendiente
 
-    simulador.compute()
-
-    riesgo_final = float(simulador.output.get("riesgo", 0))
+    try:
+        simulador.compute()
+        riesgo_final = float(simulador.output["riesgo"])
+    except Exception:
+        riesgo_final = 10.0
 
     return riesgo_final, lluvia_fz, humedad_fz, drenaje_fz, pendiente_fz, riesgo_fz
 
@@ -459,7 +451,7 @@ def obtener_nivel_riesgo(valor):
 
 
 # =====================================================
-# FUNCIONES DE GRAFICOS
+# GRAFICOS Y MAPA
 # =====================================================
 
 def crear_mapa_satelital(latitud, longitud, ciudad, riesgo_final, nivel_riesgo, color_riesgo):
@@ -549,72 +541,6 @@ def graficar_gauge(riesgo_final, nivel_riesgo, color_riesgo):
     return fig
 
 
-def graficar_variables(df_inputs):
-    fig = px.bar(
-        df_inputs,
-        x="Porcentaje",
-        y="Variable",
-        orientation="h",
-        text="Etiqueta",
-        color="Variable",
-        color_discrete_sequence=[
-            "#38BDF8",
-            "#2563EB",
-            "#22C55E",
-            "#A855F7"
-        ]
-    )
-
-    fig.update_traces(
-        textposition="outside",
-        marker_line_width=0
-    )
-
-    fig.update_layout(
-        title="Variables normalizadas del escenario analizado",
-        xaxis_title="Porcentaje sobre el valor máximo de referencia",
-        yaxis_title="",
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        showlegend=False,
-        height=390,
-        font=dict(color=COLOR_AZUL),
-        xaxis=dict(range=[0, 110])
-    )
-
-    return fig
-
-
-def graficar_radar(df_inputs):
-    fig = go.Figure()
-
-    fig.add_trace(
-        go.Scatterpolar(
-            r=df_inputs["Porcentaje"],
-            theta=df_inputs["Variable"],
-            fill="toself",
-            name="Escenario",
-            line=dict(color=COLOR_CELESTE, width=3)
-        )
-    )
-
-    fig.update_layout(
-        title="Perfil integral del escenario",
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, 100]
-            )
-        ),
-        showlegend=False,
-        height=390,
-        paper_bgcolor="white",
-        font=dict(color=COLOR_AZUL)
-    )
-
-    return fig
-
-
 def graficar_serie_climatica(df_clima):
     df = df_clima.copy()
     df["time"] = pd.to_datetime(df["time"])
@@ -683,6 +609,42 @@ def graficar_precipitacion_diaria(df_diario):
         paper_bgcolor="white",
         height=380,
         font=dict(color=COLOR_AZUL)
+    )
+
+    return fig
+
+
+def graficar_variables(df_inputs):
+    fig = px.bar(
+        df_inputs,
+        x="Porcentaje",
+        y="Variable",
+        orientation="h",
+        text="Etiqueta",
+        color="Variable",
+        color_discrete_sequence=[
+            "#38BDF8",
+            "#2563EB",
+            "#22C55E",
+            "#A855F7"
+        ]
+    )
+
+    fig.update_traces(
+        textposition="outside",
+        marker_line_width=0
+    )
+
+    fig.update_layout(
+        title="Variables normalizadas del escenario analizado",
+        xaxis_title="Porcentaje sobre el valor máximo de referencia",
+        yaxis_title="",
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        showlegend=False,
+        height=390,
+        font=dict(color=COLOR_AZUL),
+        xaxis=dict(range=[0, 110])
     )
 
     return fig
@@ -781,12 +743,12 @@ def generar_recomendaciones(lluvia, humedad, drenaje, pendiente, riesgo_final):
         recomendaciones.append("La humedad es elevada. Puede aumentar la sensibilidad del sistema ante nuevas precipitaciones.")
 
     if drenaje <= 30:
-        recomendaciones.append("La capacidad de drenaje es baja. Se recomienda revisar canales, bocas de tormenta y sistemas pluviales.")
+        recomendaciones.append("La capacidad de drenaje ingresada es baja. Se recomienda revisar canales, bocas de tormenta y sistemas pluviales.")
     elif drenaje <= 50:
-        recomendaciones.append("La capacidad de drenaje es media-baja. Conviene realizar monitoreo preventivo.")
+        recomendaciones.append("La capacidad de drenaje ingresada es media-baja. Conviene realizar monitoreo preventivo.")
 
     if pendiente <= 3:
-        recomendaciones.append("La pendiente es baja. Las zonas llanas favorecen la acumulación de agua.")
+        recomendaciones.append("La pendiente ingresada es baja. Las zonas llanas favorecen la acumulación de agua.")
 
     if riesgo_final >= 80:
         recomendaciones.append("El resultado final indica riesgo crítico. Se recomienda priorizar acciones inmediatas.")
@@ -800,7 +762,7 @@ def generar_recomendaciones(lluvia, humedad, drenaje, pendiente, riesgo_final):
 
 
 # =====================================================
-# TITULO PRINCIPAL
+# TITULO
 # =====================================================
 
 st.markdown(
@@ -811,8 +773,8 @@ st.markdown(
 st.markdown(
     """
     <div class="subtitle">
-    Aplicación web desarrollada en Streamlit para estimar el riesgo de inundación mediante un enfoque híbrido:
-    Machine Learning, lógica difusa, datos climáticos de API y visualización geográfica.
+    Aplicación web desarrollada en Streamlit para estimar el riesgo de inundación mediante Machine Learning,
+    lógica difusa, datos climáticos externos y visualización geográfica.
     </div>
     """,
     unsafe_allow_html=True
@@ -821,8 +783,9 @@ st.markdown(
 st.markdown(
     """
     <div class="info-box">
-    El sistema no requiere ingreso manual de datos. Para el análisis actual utiliza datos climáticos de API
-    y valores territoriales referenciales. Para el caso histórico utiliza el evento de Bahía Blanca de marzo de 2025.
+    La lluvia y la humedad se obtienen automáticamente desde una API climática o desde el caso histórico.
+    La capacidad de drenaje y la pendiente topográfica se ingresan manualmente porque son variables territoriales
+    que no provienen directamente de una API meteorológica.
     </div>
     """,
     unsafe_allow_html=True
@@ -857,8 +820,23 @@ if modo_analisis == "Pronóstico actual con API":
 
     latitud = CIUDADES[ciudad]["lat"]
     longitud = CIUDADES[ciudad]["lon"]
-    drenaje = CIUDADES[ciudad]["drenaje"]
-    pendiente = CIUDADES[ciudad]["pendiente"]
+
+    st.sidebar.markdown("### Variables territoriales")
+    drenaje = st.sidebar.slider(
+        "Capacidad de drenaje estimada (%)",
+        min_value=0,
+        max_value=100,
+        value=50,
+        help="Valor manual del prototipo. Un valor bajo indica peor capacidad de escurrimiento."
+    )
+
+    pendiente = st.sidebar.slider(
+        "Pendiente topográfica estimada (%)",
+        min_value=0,
+        max_value=10,
+        value=3,
+        help="Valor manual del prototipo. Una pendiente baja puede favorecer acumulación de agua."
+    )
 
     try:
         lluvia, humedad, df_clima = obtener_clima_actual_open_meteo(
@@ -872,9 +850,9 @@ if modo_analisis == "Pronóstico actual con API":
 
         st.sidebar.success("Datos climáticos cargados correctamente.")
 
-    except Exception as e:
+    except Exception:
         st.sidebar.error("No se pudieron obtener los datos climáticos desde la API.")
-        st.sidebar.info("Como se eliminó el ingreso manual, la aplicación se detiene hasta que la API responda correctamente.")
+        st.sidebar.info("La aplicación se detiene porque la lluvia y la humedad no se ingresan manualmente.")
         st.stop()
 
 
@@ -885,8 +863,6 @@ else:
 
     lluvia = CASO_HISTORICO_BAHIA["lluvia_acumulada_documentada_mm"]
     humedad = CASO_HISTORICO_BAHIA["humedad_referencial"]
-    drenaje = CASO_HISTORICO_BAHIA["drenaje_referencial"]
-    pendiente = CASO_HISTORICO_BAHIA["pendiente_referencial"]
     fuente_datos = "Caso histórico documentado y Open-Meteo Archive API"
 
     st.sidebar.markdown("### Caso histórico")
@@ -894,6 +870,23 @@ else:
     st.sidebar.write(f"Período: {CASO_HISTORICO_BAHIA['fecha_inicio']} al {CASO_HISTORICO_BAHIA['fecha_fin']}")
     st.sidebar.write(f"Lluvia acumulada documentada: {lluvia} mm")
     st.sidebar.write(f"Evento principal: {CASO_HISTORICO_BAHIA['lluvia_evento_principal_mm']} mm")
+
+    st.sidebar.markdown("### Variables territoriales")
+    drenaje = st.sidebar.slider(
+        "Capacidad de drenaje estimada (%)",
+        min_value=0,
+        max_value=100,
+        value=20,
+        help="Valor manual del prototipo. Para el caso histórico se sugiere probar valores bajos."
+    )
+
+    pendiente = st.sidebar.slider(
+        "Pendiente topográfica estimada (%)",
+        min_value=0,
+        max_value=10,
+        value=2,
+        help="Valor manual del prototipo. En zonas llanas el riesgo de acumulación suele aumentar."
+    )
 
     try:
         lluvia_api_hist, humedad_api_hist, df_clima, df_diario_historico, dias_con_lluvia = obtener_clima_historico_open_meteo(
@@ -914,8 +907,8 @@ else:
 st.sidebar.markdown("### Valores utilizados")
 st.sidebar.metric("Lluvia acumulada", f"{lluvia:.2f} mm")
 st.sidebar.metric("Humedad", f"{humedad:.2f} %")
-st.sidebar.metric("Drenaje referencial", f"{drenaje:.2f} %")
-st.sidebar.metric("Pendiente referencial", f"{pendiente:.2f} %")
+st.sidebar.metric("Drenaje ingresado", f"{drenaje:.2f} %")
+st.sidebar.metric("Pendiente ingresada", f"{pendiente:.2f} %")
 
 
 # =====================================================
@@ -948,7 +941,7 @@ else:
 
 
 # =====================================================
-# CALCULO DIFUSO
+# RIESGO DIFUSO
 # =====================================================
 
 riesgo_final, lluvia_fz, humedad_fz, drenaje_fz, pendiente_fz, riesgo_fz = calcular_riesgo_difuso(
@@ -962,110 +955,7 @@ nivel_riesgo, color_riesgo, clase_riesgo = obtener_nivel_riesgo(riesgo_final)
 
 
 # =====================================================
-# PANEL DE RESULTADOS
-# =====================================================
-
-st.markdown('<div class="section-title">Panel general de resultados</div>', unsafe_allow_html=True)
-
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
-    st.markdown(
-        f"""
-        <div class="card">
-            <div class="card-title">Ciudad analizada</div>
-            <div class="card-value">{ciudad}</div>
-            <div class="card-small">Ubicación utilizada para la consulta climática y el mapa.</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-with col2:
-    st.markdown(
-        f"""
-        <div class="card">
-            <div class="card-title">Fuente de datos</div>
-            <div class="card-value" style="font-size:23px;">{fuente_datos}</div>
-            <div class="card-small">Origen principal de las variables climáticas.</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-with col3:
-    st.markdown(
-        f"""
-        <div class="card">
-            <div class="card-title">Predicción ML</div>
-            <div class="card-value">{prediccion_ml_texto}</div>
-            <div class="card-small">Clasificación generada por el modelo entrenado.</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-with col4:
-    st.markdown(
-        f"""
-        <div class="card">
-            <div class="card-title">Riesgo difuso</div>
-            <div class="card-value">{riesgo_final:.2f}/100</div>
-            <div class="card-small">Resultado calculado mediante lógica difusa.</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-st.markdown(
-    f"""
-    <div class="{clase_riesgo}">
-    Nivel de riesgo interpretado: {nivel_riesgo}. 
-    {obtener_interpretacion(riesgo_final)}
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-
-# =====================================================
-# MAPA Y SEMAFORO
-# =====================================================
-
-st.markdown('<div class="section-title">Visualización geográfica y semáforo de riesgo</div>', unsafe_allow_html=True)
-
-col_mapa, col_gauge = st.columns([1.2, 1])
-
-with col_mapa:
-    mapa = crear_mapa_satelital(
-        latitud=latitud,
-        longitud=longitud,
-        ciudad=ciudad,
-        riesgo_final=riesgo_final,
-        nivel_riesgo=nivel_riesgo,
-        color_riesgo=color_riesgo
-    )
-
-    st_folium(
-        mapa,
-        width=700,
-        height=430,
-        returned_objects=[]
-    )
-
-with col_gauge:
-    fig_gauge = graficar_gauge(
-        riesgo_final=riesgo_final,
-        nivel_riesgo=nivel_riesgo,
-        color_riesgo=color_riesgo
-    )
-
-    st.plotly_chart(fig_gauge, use_container_width=True)
-
-
-# =====================================================
-# VARIABLES DEL ESCENARIO
+# DATAFRAME DE VARIABLES
 # =====================================================
 
 df_inputs = pd.DataFrame(
@@ -1104,269 +994,364 @@ df_inputs["Porcentaje"] = (
 df_inputs["Etiqueta"] = df_inputs["Valor"].round(2).astype(str) + " " + df_inputs["Unidad"]
 
 
-st.markdown('<div class="section-title">Variables utilizadas por el sistema</div>', unsafe_allow_html=True)
+# =====================================================
+# PESTAÑAS PRINCIPALES
+# =====================================================
 
-col_barra, col_radar = st.columns([1.1, 1])
+tab_resumen, tab_datos, tab_tecnico = st.tabs(
+    [
+        "Resumen ejecutivo",
+        "Datos climáticos",
+        "Detalle técnico del modelo"
+    ]
+)
 
-with col_barra:
+
+# =====================================================
+# TAB 1: RESUMEN EJECUTIVO
+# =====================================================
+
+with tab_resumen:
+    st.markdown('<div class="section-title">Panel general de resultados</div>', unsafe_allow_html=True)
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.markdown(
+            f"""
+            <div class="card">
+                <div class="card-title">Ciudad analizada</div>
+                <div class="card-value">{ciudad}</div>
+                <div class="card-small">Ubicación utilizada para la consulta climática y el mapa.</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with col2:
+        st.markdown(
+            f"""
+            <div class="card">
+                <div class="card-title">Lluvia acumulada</div>
+                <div class="card-value">{lluvia:.2f} mm</div>
+                <div class="card-small">Dato climático principal del análisis.</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with col3:
+        st.markdown(
+            f"""
+            <div class="card">
+                <div class="card-title">Predicción ML</div>
+                <div class="card-value">{prediccion_ml_texto}</div>
+                <div class="card-small">Clasificación generada por el modelo entrenado.</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with col4:
+        st.markdown(
+            f"""
+            <div class="card">
+                <div class="card-title">Riesgo difuso</div>
+                <div class="card-value">{riesgo_final:.2f}/100</div>
+                <div class="card-small">Resultado calculado mediante lógica difusa.</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    st.markdown(
+        f"""
+        <div class="{clase_riesgo}">
+        Nivel de riesgo interpretado: {nivel_riesgo}. 
+        {obtener_interpretacion(riesgo_final)}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown('<div class="section-title">Visualización geográfica y semáforo de riesgo</div>', unsafe_allow_html=True)
+
+    col_mapa, col_gauge = st.columns([1.2, 1])
+
+    with col_mapa:
+        mapa = crear_mapa_satelital(
+            latitud=latitud,
+            longitud=longitud,
+            ciudad=ciudad,
+            riesgo_final=riesgo_final,
+            nivel_riesgo=nivel_riesgo,
+            color_riesgo=color_riesgo
+        )
+
+        st_folium(
+            mapa,
+            width=700,
+            height=430,
+            returned_objects=[]
+        )
+
+    with col_gauge:
+        fig_gauge = graficar_gauge(
+            riesgo_final=riesgo_final,
+            nivel_riesgo=nivel_riesgo,
+            color_riesgo=color_riesgo
+        )
+
+        st.plotly_chart(fig_gauge, use_container_width=True)
+
+    st.markdown('<div class="section-title">Recomendaciones automáticas</div>', unsafe_allow_html=True)
+
+    recomendaciones = generar_recomendaciones(
+        lluvia=lluvia,
+        humedad=humedad,
+        drenaje=drenaje,
+        pendiente=pendiente,
+        riesgo_final=riesgo_final
+    )
+
+    for recomendacion in recomendaciones:
+        st.markdown(
+            f"""
+            <div class="card">
+                <div style="font-size:16px; color:#334155; line-height:1.55;">
+                    {recomendacion}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
+# =====================================================
+# TAB 2: DATOS CLIMATICOS
+# =====================================================
+
+with tab_datos:
+    st.markdown('<div class="section-title">Datos climáticos utilizados</div>', unsafe_allow_html=True)
+
+    st.markdown(
+        f"""
+        <div class="card">
+            <div class="card-title">Fuente de datos</div>
+            <div style="font-size:17px; color:#334155; line-height:1.65;">
+                {fuente_datos}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown("#### Tabla de variables utilizadas")
+    st.dataframe(
+        df_inputs,
+        use_container_width=True,
+        hide_index=True
+    )
+
     st.plotly_chart(
         graficar_variables(df_inputs),
         use_container_width=True
     )
 
-with col_radar:
-    st.plotly_chart(
-        graficar_radar(df_inputs),
-        use_container_width=True
-    )
+    if modo_analisis == "Caso histórico Bahía Blanca 2025":
+        st.markdown('<div class="section-title">Detalle del caso histórico de Bahía Blanca</div>', unsafe_allow_html=True)
 
-st.markdown("#### Tabla de variables utilizadas")
-st.dataframe(
-    df_inputs,
-    use_container_width=True,
-    hide_index=True
-)
-
-
-# =====================================================
-# CASO HISTORICO: DIAS DE LLUVIA
-# =====================================================
-
-if modo_analisis == "Caso histórico Bahía Blanca 2025":
-    st.markdown('<div class="section-title">Detalle del caso histórico de Bahía Blanca</div>', unsafe_allow_html=True)
-
-    st.markdown(
-        f"""
-        <div class="card">
-            <div class="card-title">Período analizado</div>
-            <div style="font-size:16px; color:#334155; line-height:1.65;">
-                Se analiza el período completo del {CASO_HISTORICO_BAHIA["fecha_inicio"]} al {CASO_HISTORICO_BAHIA["fecha_fin"]}.
-                El valor principal utilizado para el cálculo de riesgo es la lluvia acumulada documentada de
-                {CASO_HISTORICO_BAHIA["lluvia_acumulada_documentada_mm"]} mm.
-                También se considera el evento principal del {CASO_HISTORICO_BAHIA["fecha_evento_principal"]},
-                con {CASO_HISTORICO_BAHIA["lluvia_evento_principal_mm"]} mm en 12 horas.
+        st.markdown(
+            f"""
+            <div class="card">
+                <div class="card-title">Período analizado</div>
+                <div style="font-size:16px; color:#334155; line-height:1.65;">
+                    Se analiza el período completo del {CASO_HISTORICO_BAHIA["fecha_inicio"]} al {CASO_HISTORICO_BAHIA["fecha_fin"]}.
+                    El valor principal utilizado para el cálculo de riesgo es la lluvia acumulada documentada de
+                    {CASO_HISTORICO_BAHIA["lluvia_acumulada_documentada_mm"]} mm.
+                    También se considera el evento principal del {CASO_HISTORICO_BAHIA["fecha_evento_principal"]},
+                    con {CASO_HISTORICO_BAHIA["lluvia_evento_principal_mm"]} mm en 12 horas.
+                </div>
             </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+            """,
+            unsafe_allow_html=True
+        )
 
-    if df_diario_historico is not None:
-        st.markdown("#### Precipitación diaria estimada por Open-Meteo Archive")
+        if df_diario_historico is not None:
+            st.markdown("#### Precipitación diaria estimada por Open-Meteo Archive")
+            st.plotly_chart(
+                graficar_precipitacion_diaria(df_diario_historico),
+                use_container_width=True
+            )
+
+            st.markdown("#### Días con precipitación dentro del período")
+            st.dataframe(
+                dias_con_lluvia,
+                use_container_width=True,
+                hide_index=True
+            )
+
+    if df_clima is not None:
+        st.markdown('<div class="section-title">Serie climática obtenida desde la API</div>', unsafe_allow_html=True)
+
         st.plotly_chart(
-            graficar_precipitacion_diaria(df_diario_historico),
+            graficar_serie_climatica(df_clima),
             use_container_width=True
         )
 
-        st.markdown("#### Días con precipitación dentro del período")
-        st.dataframe(
-            dias_con_lluvia,
-            use_container_width=True,
-            hide_index=True
-        )
-
 
 # =====================================================
-# SERIE CLIMATICA
+# TAB 3: DETALLE TECNICO
 # =====================================================
 
-if df_clima is not None:
-    st.markdown('<div class="section-title">Serie climática obtenida desde la API</div>', unsafe_allow_html=True)
+with tab_tecnico:
+    st.markdown('<div class="section-title">Lectura del modelo de Machine Learning</div>', unsafe_allow_html=True)
 
-    st.plotly_chart(
-        graficar_serie_climatica(df_clima),
-        use_container_width=True
-    )
+    if modelo is not None:
+        modelo_base = modelo
 
+        if hasattr(modelo, "named_steps"):
+            modelo_base = list(modelo.named_steps.values())[-1]
 
-# =====================================================
-# IMPORTANCIA DE VARIABLES DEL MODELO ML
-# =====================================================
+        if hasattr(modelo_base, "feature_importances_"):
+            importancias = modelo_base.feature_importances_
 
-st.markdown('<div class="section-title">Lectura del modelo de Machine Learning</div>', unsafe_allow_html=True)
+            nombres_variables = [
+                "Lluvia",
+                "Humedad",
+                "Drenaje",
+                "Pendiente"
+            ]
 
-if modelo is not None:
-    modelo_base = modelo
+            if len(importancias) == len(nombres_variables):
+                df_importancia = pd.DataFrame(
+                    {
+                        "Variable": nombres_variables,
+                        "Importancia": importancias
+                    }
+                ).sort_values("Importancia", ascending=True)
 
-    if hasattr(modelo, "named_steps"):
-        modelo_base = list(modelo.named_steps.values())[-1]
+                fig_imp = px.bar(
+                    df_importancia,
+                    x="Importancia",
+                    y="Variable",
+                    orientation="h",
+                    text=df_importancia["Importancia"].round(3),
+                    color="Importancia",
+                    color_continuous_scale="Blues"
+                )
 
-    if hasattr(modelo_base, "feature_importances_"):
-        importancias = modelo_base.feature_importances_
+                fig_imp.update_traces(textposition="outside")
 
-        nombres_variables = [
-            "Lluvia",
-            "Humedad",
-            "Drenaje",
-            "Pendiente"
-        ]
+                fig_imp.update_layout(
+                    title="Importancia de variables según el modelo entrenado",
+                    xaxis_title="Importancia relativa",
+                    yaxis_title="",
+                    plot_bgcolor="white",
+                    paper_bgcolor="white",
+                    height=380,
+                    font=dict(color=COLOR_AZUL),
+                    coloraxis_showscale=False
+                )
 
-        if len(importancias) == len(nombres_variables):
-            df_importancia = pd.DataFrame(
-                {
-                    "Variable": nombres_variables,
-                    "Importancia": importancias
-                }
-            ).sort_values("Importancia", ascending=True)
+                st.plotly_chart(fig_imp, use_container_width=True)
 
-            fig_imp = px.bar(
-                df_importancia,
-                x="Importancia",
-                y="Variable",
-                orientation="h",
-                text=df_importancia["Importancia"].round(3),
-                color="Importancia",
-                color_continuous_scale="Blues"
-            )
-
-            fig_imp.update_traces(textposition="outside")
-
-            fig_imp.update_layout(
-                title="Importancia de variables según el modelo entrenado",
-                xaxis_title="Importancia relativa",
-                yaxis_title="",
-                plot_bgcolor="white",
-                paper_bgcolor="white",
-                height=380,
-                font=dict(color=COLOR_AZUL),
-                coloraxis_showscale=False
-            )
-
-            st.plotly_chart(fig_imp, use_container_width=True)
+            else:
+                st.info(
+                    "El modelo posee importancias, pero la cantidad de variables no coincide con las variables actuales."
+                )
 
         else:
             st.info(
-                "El modelo posee importancias, pero la cantidad de variables no coincide con las variables actuales."
+                "El modelo cargado no expone feature_importances_. Esto puede ocurrir si el modelo entrenado "
+                "no es un árbol de decisión, random forest u otro modelo basado en importancia de variables."
             )
-
     else:
         st.info(
-            "El modelo cargado no expone feature_importances_. Esto puede ocurrir si el modelo entrenado "
-            "no es un árbol de decisión, random forest u otro modelo basado en importancia de variables."
+            "No se encontró el archivo modelo_ml.pkl. La aplicación continúa funcionando con lógica difusa y visualización."
         )
-else:
-    st.info(
-        "No se encontró el archivo modelo_ml.pkl. La aplicación continúa funcionando con lógica difusa y visualización."
+
+    st.markdown('<div class="section-title">Funciones de pertenencia de la lógica difusa</div>', unsafe_allow_html=True)
+
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(
+        [
+            "Lluvia",
+            "Humedad",
+            "Drenaje",
+            "Pendiente",
+            "Riesgo"
+        ]
     )
 
+    with tab1:
+        st.plotly_chart(
+            graficar_pertenencia(
+                lluvia_fz,
+                lluvia,
+                "Pertenencia difusa de la lluvia",
+                "mm"
+            ),
+            use_container_width=True
+        )
 
-# =====================================================
-# FUNCIONES DE PERTENENCIA DIFUSA
-# =====================================================
+    with tab2:
+        st.plotly_chart(
+            graficar_pertenencia(
+                humedad_fz,
+                humedad,
+                "Pertenencia difusa de la humedad",
+                "%"
+            ),
+            use_container_width=True
+        )
 
-st.markdown('<div class="section-title">Funciones de pertenencia de la lógica difusa</div>', unsafe_allow_html=True)
+    with tab3:
+        st.plotly_chart(
+            graficar_pertenencia(
+                drenaje_fz,
+                drenaje,
+                "Pertenencia difusa de la capacidad de drenaje",
+                "%"
+            ),
+            use_container_width=True
+        )
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(
-    [
-        "Lluvia",
-        "Humedad",
-        "Drenaje",
-        "Pendiente",
-        "Riesgo"
-    ]
-)
+    with tab4:
+        st.plotly_chart(
+            graficar_pertenencia(
+                pendiente_fz,
+                pendiente,
+                "Pertenencia difusa de la pendiente topográfica",
+                "%"
+            ),
+            use_container_width=True
+        )
 
-with tab1:
-    st.plotly_chart(
-        graficar_pertenencia(
-            lluvia_fz,
-            lluvia,
-            "Pertenencia difusa de la lluvia",
-            "mm"
-        ),
-        use_container_width=True
-    )
+    with tab5:
+        st.plotly_chart(
+            graficar_pertenencia(
+                riesgo_fz,
+                riesgo_final,
+                "Pertenencia difusa del riesgo final",
+                "puntos"
+            ),
+            use_container_width=True
+        )
 
-with tab2:
-    st.plotly_chart(
-        graficar_pertenencia(
-            humedad_fz,
-            humedad,
-            "Pertenencia difusa de la humedad",
-            "%"
-        ),
-        use_container_width=True
-    )
+    st.markdown('<div class="section-title">Descripción técnica del sistema</div>', unsafe_allow_html=True)
 
-with tab3:
-    st.plotly_chart(
-        graficar_pertenencia(
-            drenaje_fz,
-            drenaje,
-            "Pertenencia difusa de la capacidad de drenaje",
-            "%"
-        ),
-        use_container_width=True
-    )
-
-with tab4:
-    st.plotly_chart(
-        graficar_pertenencia(
-            pendiente_fz,
-            pendiente,
-            "Pertenencia difusa de la pendiente topográfica",
-            "%"
-        ),
-        use_container_width=True
-    )
-
-with tab5:
-    st.plotly_chart(
-        graficar_pertenencia(
-            riesgo_fz,
-            riesgo_final,
-            "Pertenencia difusa del riesgo final",
-            "puntos"
-        ),
-        use_container_width=True
-    )
-
-
-# =====================================================
-# RECOMENDACIONES AUTOMATICAS
-# =====================================================
-
-st.markdown('<div class="section-title">Recomendaciones automáticas</div>', unsafe_allow_html=True)
-
-recomendaciones = generar_recomendaciones(
-    lluvia=lluvia,
-    humedad=humedad,
-    drenaje=drenaje,
-    pendiente=pendiente,
-    riesgo_final=riesgo_final
-)
-
-for recomendacion in recomendaciones:
     st.markdown(
-        f"""
+        """
         <div class="card">
-            <div style="font-size:16px; color:#334155; line-height:1.55;">
-                {recomendacion}
+            <div style="font-size:16px; color:#334155; line-height:1.65;">
+                Esta aplicación integra un modelo de Machine Learning, un sistema de lógica difusa,
+                datos climáticos externos y visualización geográfica. La lluvia y la humedad provienen de la API
+                o del caso histórico documentado. La capacidad de drenaje y la pendiente son ingresadas manualmente
+                porque corresponden a variables territoriales que, en una implementación real, deberían obtenerse
+                a partir de cartografía urbana, modelos digitales de elevación, infraestructura pluvial y datos
+                geoespaciales oficiales.
             </div>
         </div>
         """,
         unsafe_allow_html=True
     )
-
-
-# =====================================================
-# CIERRE TECNICO
-# =====================================================
-
-st.markdown('<div class="section-title">Descripción técnica del sistema</div>', unsafe_allow_html=True)
-
-st.markdown(
-    """
-    <div class="card">
-        <div style="font-size:16px; color:#334155; line-height:1.65;">
-            Esta aplicación integra tres componentes principales. Primero, un modelo de Machine Learning entrenado
-            para clasificar niveles de riesgo a partir de variables climáticas y territoriales. Segundo, un sistema
-            de lógica difusa que permite interpretar el riesgo de manera gradual, considerando incertidumbre y rangos
-            lingüísticos. Tercero, una conexión con datos climáticos externos para analizar escenarios actuales o
-            históricos. La visualización combina indicadores numéricos, gráficos explicativos y un mapa satelital para
-            facilitar la interpretación del resultado.
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
